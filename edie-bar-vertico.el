@@ -41,7 +41,7 @@
 
 (defun edie-bar-vertico--display-candidates (candidates)
   ""
-  (with-selected-frame edie-bar-frame
+  (with-selected-frame (edie-bar-frame)
     (let* ((char-height (frame-char-height))
            (width (edie-bar-vertico--candidates-width))
            (height (/ (frame-pixel-height) (float char-height)))
@@ -55,7 +55,7 @@
 
 (defun edie-bar-vertico--arrange-candidates ()
   ""
-  (with-selected-frame edie-bar-frame
+  (with-selected-frame (edie-bar-frame)
     (let* ((collection (nthcdr vertico--index vertico--candidates))
            (width (edie-bar-vertico--candidates-width))
            (unit (frame-char-width))
@@ -73,7 +73,7 @@
 
 (defun edie-bar-vertico-format-count (count)
   ""
-  (with-selected-frame edie-bar-frame
+  (with-selected-frame (edie-bar-frame)
     (propertize (substring-no-properties count)
                 'display (edie-ml-render `(:width ,(length count)) `(text ,count)))))
 

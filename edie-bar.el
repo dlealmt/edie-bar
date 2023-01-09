@@ -62,8 +62,6 @@
   :type '(alist :key-type symbol)
   :group 'edie-bar)
 
-(defvar edie-bar-frame nil)
-
 ;;;###autoload
 (define-minor-mode edie-bar-mode
   nil
@@ -81,9 +79,8 @@
   (setq minibuffer-frame-alist
         (map-merge 'alist minibuffer-frame-alist edie-bar-default-frame-alist)))
 
-(defun edie-bar--set-bar ()
-  ""
-  (setq edie-bar-frame default-minibuffer-frame))
+(defsubst edie-bar-frame ()
+  default-minibuffer-frame)
 
 (defun edie-bar-resize (frame)
   ""
@@ -99,7 +96,7 @@
 
 (defun edie-bar-set-message (message)
   ""
-  (with-selected-frame edie-bar-frame
+  (with-selected-frame (edie-bar-frame)
     (propertize (substring-no-properties message) 'display (edie-ml-render nil `(text ,message)))))
 
 (defun edie-bar-command-error (data _ _)
@@ -107,7 +104,7 @@
   (message "%s" (error-message-string data)))
 
 (cl-defun edie-bar-svg-prompt ((str &rest args))
-  (with-selected-frame edie-bar-frame
+  (with-selected-frame (edie-bar-frame)
     (append
      (list (propertize (substring-no-properties str)
                        'display (edie-ml-render `(:width ,(length str)) `(text ,str))))
