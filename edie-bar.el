@@ -5,7 +5,7 @@
 ;; Author: David Leal <dleal@mojotech.com>
 ;; Maintainer: David Leal <dleal@mojotech.com>
 ;; Created: 2022
-;; Package-Requires: ((emacs "28.2"))
+;; Package-Requires: ((emacs "28.1"))
 
 ;; This file is part of Edie.
 
