@@ -30,6 +30,7 @@
 ;;; Code:
 
 (require 'edie-ml)
+(require 'vertico)
 
 (defcustom edie-bar-vertico-map
   (let ((map (make-sparse-keymap)))
