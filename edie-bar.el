@@ -29,8 +29,11 @@
 ;;; Code:
 
 (eval-when-compile
-  (require 'pcase))
+  (require 'pcase)
+  (require 'subr-x))
 
+(require 'edie-ml)
+(require 'map)
 (require 'svg)
 
 (defgroup edie-bar nil
