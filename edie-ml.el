@@ -40,22 +40,21 @@
 (defvar edie-ml-unit-x 10.5)
 (defvar edie-ml-unit-y nil)
 
-(cl-defun edie-ml ((&key (width nil) (height nil)) spec)
+(defun edie-ml (attributes spec)
   ""
   (pcase-let* ((edie-ml-unit-x (or edie-ml-unit-x (frame-char-width)))
                (edie-ml-unit-y (or edie-ml-unit-y (frame-char-height)))
-               (height (or (and height (* height edie-ml-unit-y)) (frame-pixel-height)))
-               (width (or (and width (* width edie-ml-unit-x)) (frame-pixel-width))))
+               ((map height width) attributes))
     `(svg
-      ((width . ,width)
-       (height . ,height)
+      ((width . ,(or (and width (* width edie-ml-unit-x)) (frame-pixel-width)))
+       (height . ,(or (and height (* height edie-ml-unit-y)) (frame-pixel-height)))
        (version . "1.1")
        (xmlns . "http://www.w3.org/2000/svg")
        (xmlns:xlink . "http://www.w3.org/1999/xlink"))
       ,(edie-ml-parse spec))))
 
-(defun edie-ml-render (attrs spec)
-  (let ((svg (edie-ml attrs spec)))
+(defun edie-ml-render (attributes spec)
+  (let ((svg (edie-ml attributes spec)))
     (create-image
      (with-temp-buffer
        (insert (edie-ml--render svg))

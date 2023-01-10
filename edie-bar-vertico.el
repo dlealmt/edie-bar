@@ -47,7 +47,7 @@
            (width (edie-bar-vertico--candidates-width))
            (height (/ (frame-pixel-height) (float char-height)))
            (candidates-string (string-join candidates))
-           (rendered (edie-ml-render `(:width ,width) `(text nil ,candidates-string))))
+           (rendered (edie-ml-render `((width . ,width)) `(text nil ,candidates-string))))
       (move-overlay vertico--candidates-ov (point-max) (point-max))
       (overlay-put vertico--candidates-ov 'after-string
                    (concat #(" " 0 1 (cursor t))
@@ -76,7 +76,7 @@
   ""
   (with-selected-frame (edie-bar-frame)
     (propertize (substring-no-properties count)
-                'display (edie-ml-render `(:width ,(length count)) `(text nil ,count)))))
+                'display (edie-ml-render `((width . ,(length count))) `(text nil ,count)))))
 
 (defun edie-bar-vertico--candidates-width ()
   (- (frame-width) (car (posn-col-row (posn-at-point (1- (point-max)))))))

@@ -109,7 +109,7 @@
   (with-selected-frame (edie-bar-frame)
     (append
      (list (propertize (substring-no-properties str)
-                       'display (edie-ml-render `(:width ,(length str)) `(text nil ,str))))
+                       'display (edie-ml-render `((width . ,(length str))) `(text nil ,str))))
      args)))
 
 (provide 'edie-bar)
