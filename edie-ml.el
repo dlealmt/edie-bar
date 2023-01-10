@@ -33,6 +33,7 @@
   (require 'map)
   (require 'pcase))
 
+(require 'dom)
 (require 'xml)
 
 (defvar edie-ml-icon-directory "~/.cache/material-design/svg")
@@ -118,13 +119,19 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
   ""
   (let ((default-attrs (edie-ml--face-attributes-to-svg
                         (face-all-attributes 'default (selected-frame)))))
-    `(g
-      ((width . "100%")
+    (apply
+     #'dom-node
+     'g
+     '((width . "100%")
        (height . "100%")
        (x . 0)
        (y . 0))
-      ,@backgrounds
-      (text ,(map-merge
+     (nconc
+      backgrounds
+      (list (apply
+             #'dom-node
+             'text
+             (map-merge
               'alist
               default-attrs
               '((width . "100%")
@@ -133,7 +140,7 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
                 (y . "50%")
                 (dominant-baseline . "middle")
                 ("xml:space" . "preserve")))
-            ,@tspans))))
+             tspans))))))
 
 (defun edie-ml--text-span (string &optional attributes)
   ""
@@ -147,7 +154,7 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
                                  (alignment-baseline . "central"))
                                base-attrs
                                attributes)))
-    (append (list 'tspan svg-attrs) (list (xml-escape-string (substring-no-properties string))))))
+    (dom-node 'tspan svg-attrs (xml-escape-string (substring-no-properties string)))))
 
 (defun edie-ml--text-background (string attributes)
   ""
@@ -164,7 +171,7 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
                                default-attrs
                                base-attrs
                                attributes)))
-    (list 'rect svg-attrs)))
+    (dom-node 'rect svg-attrs)))
 
 (defun edie-ml--string-to-text (string)
   ""
