@@ -58,6 +58,7 @@
      (edie-ml-parse spec))))
 
 (defun edie-ml-render (attributes spec)
+  ""
   (let ((svg (edie-ml attributes spec)))
     (create-image
      (with-temp-buffer
@@ -68,6 +69,7 @@
      :scale 1)))
 
 (cl-defun edie-ml--render (spec)
+  ""
   (pcase spec
     ((pred stringp) spec)
     ((seq tag attrs &rest children)
@@ -216,6 +218,8 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
     (edie-ml--text (nreverse tspans) backgrounds)))
 
 (cl-defmethod edie-ml-parse (((_ _ body) (head text)))
+  ""
   (edie-ml--string-to-text body))
 
 (provide 'edie-ml)
+;;; edie-ml.el ends here
