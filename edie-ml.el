@@ -31,9 +31,11 @@
 (eval-when-compile
   (require 'cl-lib)
   (require 'map)
-  (require 'pcase))
+  (require 'pcase)
+  (require 'subr-x))
 
 (require 'dom)
+(require 'map)
 (require 'xml)
 
 (defvar edie-ml-icon-directory "~/.cache/material-design/svg")
