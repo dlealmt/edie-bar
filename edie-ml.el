@@ -40,14 +40,6 @@
 (defvar edie-ml-unit-x 10.5)
 (defvar edie-ml-unit-y nil)
 
-(cl-defun edie-ml-normalize (spec)
-  (pcase spec
-    ((pred stringp) spec)
-    ((seq tag (and attrs (guard (keywordp (car-safe attrs)))) &rest children)
-     `(,tag ,attrs ,(mapcar #'edie-ml-normalize children)))
-    ((seq tag &rest children)
-     `(,tag nil ,(mapcar #'edie-ml-normalize children)))))
-
 (cl-defun edie-ml ((&key (width nil) (height nil)) spec)
   ""
   (pcase-let* ((edie-ml-unit-x (or edie-ml-unit-x (frame-char-width)))
@@ -60,7 +52,7 @@
        (version . "1.1")
        (xmlns . "http://www.w3.org/2000/svg")
        (xmlns:xlink . "http://www.w3.org/1999/xlink"))
-      ,(edie-ml-parse (edie-ml-normalize spec)))))
+      ,(edie-ml-parse spec))))
 
 (defun edie-ml-render (attrs spec)
   (let ((svg (edie-ml attrs spec)))
@@ -214,7 +206,7 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
         (setq point next-point)))
     (edie-ml--text (nreverse tspans) backgrounds)))
 
-(cl-defmethod edie-ml-parse (((_ _ (body)) (head text)))
+(cl-defmethod edie-ml-parse (((_ _ body) (head text)))
   (edie-ml--string-to-text body))
 
 (provide 'edie-ml)

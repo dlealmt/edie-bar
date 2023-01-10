@@ -98,7 +98,8 @@
 (defun edie-bar-set-message (message)
   ""
   (with-selected-frame (edie-bar-frame)
-    (propertize (substring-no-properties message) 'display (edie-ml-render nil `(text ,message)))))
+    (propertize (substring-no-properties message)
+                'display (edie-ml-render nil `(text nil ,message)))))
 
 (defun edie-bar-command-error (data _ _)
   ""
@@ -108,7 +109,7 @@
   (with-selected-frame (edie-bar-frame)
     (append
      (list (propertize (substring-no-properties str)
-                       'display (edie-ml-render `(:width ,(length str)) `(text ,str))))
+                       'display (edie-ml-render `(:width ,(length str)) `(text nil ,str))))
      args)))
 
 (provide 'edie-bar)
