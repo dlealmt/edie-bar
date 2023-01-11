@@ -59,14 +59,7 @@
 
 (defun edie-ml-render (attributes spec)
   ""
-  (let ((svg (edie-ml attributes spec)))
-    (create-image
-     (with-temp-buffer
-       (insert (edie-ml--render svg))
-       (buffer-string))
-     'svg
-     t
-     :scale 1)))
+  (create-image (edie-ml--render (edie-ml attributes spec)) 'svg t :scale 1))
 
 (cl-defun edie-ml--render (spec)
   ""
