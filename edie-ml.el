@@ -59,9 +59,9 @@
 
 (defun edie-ml-render (attributes spec)
   ""
-  (create-image (edie-ml--render (edie-ml attributes spec)) 'svg t :scale 1))
+  (create-image (edie-ml-svg (edie-ml attributes spec)) 'svg t :scale 1))
 
-(cl-defun edie-ml--render (spec)
+(cl-defun edie-ml-svg (spec)
   ""
   (pcase spec
     ((pred stringp) spec)
@@ -69,7 +69,7 @@
      (format "<%s%s>%s</%s>"
              tag
              (string-join (map-apply (lambda (k v) (format " %s=\"%s\"" k v)) attrs))
-             (string-join (mapcar #'edie-ml--render children))
+             (string-join (mapcar #'edie-ml-svg children))
              tag))
     (_ (error "Don't know how to convert `%S' to string" spec))))
 
