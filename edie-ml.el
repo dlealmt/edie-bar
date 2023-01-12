@@ -58,13 +58,16 @@
        (xmlns:xlink . "http://www.w3.org/1999/xlink"))
      children)))
 
-(defun edie-ml (attributes spec)
+(defun edie-ml (spec)
   ""
-  (edie-ml--make-svg attributes (edie-ml-parse spec)))
+  (edie-ml-parse spec))
 
 (defun edie-ml-render (attributes spec)
   ""
-  (create-image (edie-ml-svg (edie-ml attributes spec)) 'svg t :scale 1))
+  (thread-first
+    (edie-ml--make-svg attributes (edie-ml spec))
+    (edie-ml-svg)
+    (create-image 'svg t :scale 1)))
 
 (cl-defun edie-ml-svg (spec)
   ""
