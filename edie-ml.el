@@ -60,7 +60,15 @@
 
 (defun edie-ml (spec)
   ""
-  (edie-ml-parse spec))
+  (if (listp spec)
+    (let ((node (edie-ml-parse spec))
+          next new)
+      (while (not (eq node (setq next (edie-ml-parse node))))
+        (setq node next))
+      (setq new (seq-take node 2))
+      (dolist (c (dom-children node) new)
+        (dom-append-child new (edie-ml c))))
+    spec))
 
 (defun edie-ml-render (attributes spec)
   ""
@@ -81,7 +89,9 @@
              tag))
     (_ (error "Don't know how to convert `%S' to string" spec))))
 
-(cl-defgeneric edie-ml-parse (node))
+(cl-defgeneric edie-ml-parse (node)
+  ""
+  node)
 
 ;; text
 
@@ -209,9 +219,11 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
         (setq point next-point)))
     (edie-ml--text (nreverse tspans) backgrounds)))
 
-(cl-defmethod edie-ml-parse (((_ _ body) (head text)))
+(cl-defmethod edie-ml-parse ((node (head text)))
   ""
-  (edie-ml--string-to-text body))
+  (if (listp (car (dom-children node)))
+      node
+    (edie-ml--string-to-text (car (dom-children node)))))
 
 (provide 'edie-ml)
 ;;; edie-ml.el ends here
