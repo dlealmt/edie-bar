@@ -43,21 +43,6 @@
 (defvar edie-ml-unit-x 10.5)
 (defvar edie-ml-unit-y nil)
 
-(cl-defun edie-ml--make-svg ((_ attributes &rest children))
-  ""
-  (pcase-let* ((edie-ml-unit-x (or edie-ml-unit-x (frame-char-width)))
-               (edie-ml-unit-y (or edie-ml-unit-y (frame-char-height)))
-               ((map height width) attributes))
-    (apply
-     #'dom-node
-     'svg
-     `((width . ,(or (and width (* width edie-ml-unit-x)) (frame-pixel-width)))
-       (height . ,(or (and height (* height edie-ml-unit-y)) (frame-pixel-height)))
-       (version . "1.1")
-       (xmlns . "http://www.w3.org/2000/svg")
-       (xmlns:xlink . "http://www.w3.org/1999/xlink"))
-     children)))
-
 (defun edie-ml (spec)
   ""
   (if (listp spec)
@@ -73,7 +58,7 @@
 (defun edie-ml-render (spec)
   ""
   (thread-first
-    (edie-ml--make-svg (edie-ml spec))
+    (edie-ml spec)
     (edie-ml-svg)
     (create-image 'svg t :scale 1)))
 
@@ -228,7 +213,18 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
 ;; widget
 (cl-defmethod edie-ml-parse ((node (head widget)))
   ""
-  (apply #'dom-node 'g (dom-attributes node) (dom-children node)))
+  (pcase-let* ((edie-ml-unit-x (or edie-ml-unit-x (frame-char-width)))
+               (edie-ml-unit-y (or edie-ml-unit-y (frame-char-height)))
+               ((map height width) (dom-attributes node)))
+    (apply
+     #'dom-node
+     'svg
+     `((width . ,(or (and width (* width edie-ml-unit-x)) (frame-pixel-width)))
+       (height . ,(or (and height (* height edie-ml-unit-y)) (frame-pixel-height)))
+       (version . "1.1")
+       (xmlns . "http://www.w3.org/2000/svg")
+       (xmlns:xlink . "http://www.w3.org/1999/xlink"))
+     (dom-children node))))
 
 (provide 'edie-ml)
 ;;; edie-ml.el ends here
