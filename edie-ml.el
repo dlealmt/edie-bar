@@ -123,10 +123,7 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
     (apply
      #'dom-node
      'g
-     '((width . "100%")
-       (height . "100%")
-       (x . 0)
-       (y . 0))
+     '((height . "100%"))
      (nconc
       backgrounds
       (list (apply
@@ -135,10 +132,7 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
              (map-merge
               'alist
               default-attrs
-              '((width . "100%")
-                (height . "100%")
-                (x . 0)
-                (y . "50%")
+              '((y . "50%")
                 (dominant-baseline . "middle")
                 ("xml:space" . "preserve")))
              tspans))))))
@@ -150,9 +144,7 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
                        (edie-ml--face-attributes-at 0 string)
                        (edie-ml--face-attributes-to-svg)))
          (svg-attrs (map-merge 'alist
-                               `((y . "50%")
-                                 (heigth . "100%")
-                                 (alignment-baseline . "central"))
+                               `((alignment-baseline . "central"))
                                base-attrs
                                attributes)))
     (dom-node 'tspan svg-attrs (xml-escape-string (substring-no-properties string)))))

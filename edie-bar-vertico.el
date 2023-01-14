@@ -44,10 +44,9 @@
   ""
   (with-selected-frame (edie-bar-frame)
     (let* ((char-height (frame-char-height))
-           (width (edie-bar-vertico--candidates-width))
            (height (/ (frame-pixel-height) (float char-height)))
            (candidates-string (string-join candidates))
-           (rendered (edie-ml-render `(widget ((width . ,width))
+           (rendered (edie-ml-render `(widget nil
                                        (text nil ,candidates-string)))))
       (move-overlay vertico--candidates-ov (point-max) (point-max))
       (overlay-put vertico--candidates-ov 'after-string
