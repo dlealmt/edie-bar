@@ -43,7 +43,7 @@
 (defvar edie-ml-unit-x 10.5)
 (defvar edie-ml-unit-y nil)
 
-(defun edie-ml--make-svg (attributes &rest children)
+(cl-defun edie-ml--make-svg ((_ attributes &rest children))
   ""
   (pcase-let* ((edie-ml-unit-x (or edie-ml-unit-x (frame-char-width)))
                (edie-ml-unit-y (or edie-ml-unit-y (frame-char-height)))
@@ -70,10 +70,10 @@
         (dom-append-child new (edie-ml c))))
     spec))
 
-(defun edie-ml-render (attributes spec)
+(defun edie-ml-render (spec)
   ""
   (thread-first
-    (edie-ml--make-svg attributes (edie-ml spec))
+    (edie-ml--make-svg (edie-ml spec))
     (edie-ml-svg)
     (create-image 'svg t :scale 1)))
 
@@ -224,6 +224,11 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
   (if (listp (car (dom-children node)))
       node
     (edie-ml--string-to-text (car (dom-children node)))))
+
+;; widget
+(cl-defmethod edie-ml-parse ((node (head widget)))
+  ""
+  (apply #'dom-node 'g (dom-attributes node) (dom-children node)))
 
 (provide 'edie-ml)
 ;;; edie-ml.el ends here
