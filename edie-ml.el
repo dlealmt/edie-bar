@@ -55,7 +55,7 @@
         (dom-append-child new (edie-ml c))))
     spec))
 
-(defun edie-ml-render (spec)
+(defun edie-ml-create-image (spec)
   ""
   (thread-first
     (edie-ml spec)
