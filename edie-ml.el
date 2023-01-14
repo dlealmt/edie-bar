@@ -174,41 +174,38 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
                                attributes)))
     (dom-node 'rect svg-attrs)))
 
-(defun edie-ml--string-to-text (string)
-  ""
-  (let ((point 0)
-        (tspans nil)
-        (backgrounds nil))
-    (while point
-      (let* ((next-point (next-single-property-change point 'face string))
-             (string (substring string point next-point))
-             (this-text (edie-ml--text-span string))
-             (prev-text (car tspans))
-             (this-bg (edie-ml--text-background string `((x . ,point))))
-             (prev-bg (car backgrounds)))
-        (cond
-         ((not this-text)
-          (error "`this-text' should always be set"))
-         ((equal (dom-attributes this-text) (dom-attributes prev-text))
-          (dom-append-child prev-text (dom-text this-text)))
-         (t
-          (push this-text tspans)))
-        (cond
-         ((not prev-bg)
-          (push this-bg backgrounds))
-         ((equal (dom-attr this-bg 'fill) (dom-attr prev-bg 'fill))
-          (dom-set-attribute
-           prev-bg 'width (+ (dom-attr prev-bg 'width) (dom-attr this-bg 'width))))
-         (t
-          (push this-bg backgrounds)))
-        (setq point next-point)))
-    (edie-ml--text (nreverse tspans) backgrounds)))
-
 (cl-defmethod edie-ml-parse ((node (head text)))
   ""
   (if (listp (car (dom-children node)))
       node
-    (edie-ml--string-to-text (car (dom-children node)))))
+    (let ((string (car (dom-children node)))
+          (point 0)
+          (tspans nil)
+          (backgrounds nil))
+      (while point
+        (let* ((next-point (next-single-property-change point 'face string))
+               (string (substring string point next-point))
+               (this-text (edie-ml--text-span string))
+               (prev-text (car tspans))
+               (this-bg (edie-ml--text-background string `((x . ,point))))
+               (prev-bg (car backgrounds)))
+          (cond
+           ((not this-text)
+            (error "`this-text' should always be set"))
+           ((equal (dom-attributes this-text) (dom-attributes prev-text))
+            (dom-append-child prev-text (dom-text this-text)))
+           (t
+            (push this-text tspans)))
+          (cond
+           ((not prev-bg)
+            (push this-bg backgrounds))
+           ((equal (dom-attr this-bg 'fill) (dom-attr prev-bg 'fill))
+            (dom-set-attribute
+             prev-bg 'width (+ (dom-attr prev-bg 'width) (dom-attr this-bg 'width))))
+           (t
+            (push this-bg backgrounds)))
+          (setq point next-point)))
+      (edie-ml--text (nreverse tspans) backgrounds))))
 
 ;; widget
 (cl-defmethod edie-ml-parse ((node (head widget)))
