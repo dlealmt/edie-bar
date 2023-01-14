@@ -137,7 +137,7 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
                 ("xml:space" . "preserve")))
              tspans))))))
 
-(defun edie-ml--text-span (string &optional attributes)
+(defun edie-ml--text-span (string)
   ""
   (let* ((base-attrs (thread-last
                        '(:family :foreground :height)
@@ -145,8 +145,7 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
                        (edie-ml--face-attributes-to-svg)))
          (svg-attrs (map-merge 'alist
                                `((alignment-baseline . "central"))
-                               base-attrs
-                               attributes)))
+                               base-attrs)))
     (dom-node 'tspan svg-attrs (xml-escape-string (substring-no-properties string)))))
 
 (defun edie-ml--text-background (string attributes)
