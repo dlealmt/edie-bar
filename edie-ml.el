@@ -59,6 +59,7 @@
   ""
   (thread-first
     (edie-ml--render spec)
+    (edie-ml-svg)
     (edie-ml--stringify)
     (create-image 'svg t :scale 1)))
 
@@ -77,6 +78,8 @@
 (cl-defgeneric edie-ml-render (node)
   ""
   node)
+
+(cl-defgeneric edie-ml-svg (node))
 
 ;; text
 
@@ -165,7 +168,7 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
                                attributes)))
     (dom-node 'rect svg-attrs)))
 
-(cl-defmethod edie-ml-render ((node (head text)))
+(cl-defmethod edie-ml-svg ((node (head text)))
   ""
   (if (listp (car (dom-children node)))
       node
@@ -199,7 +202,7 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
       (edie-ml--text (nreverse tspans) backgrounds))))
 
 ;; widget
-(cl-defmethod edie-ml-render ((node (head widget)))
+(cl-defmethod edie-ml-svg ((node (head widget)))
   ""
   (pcase-let* ((edie-ml-unit-x (or edie-ml-unit-x (frame-char-width)))
                (edie-ml-unit-y (or edie-ml-unit-y (frame-char-height)))
@@ -212,7 +215,13 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
        (version . "1.1")
        (xmlns . "http://www.w3.org/2000/svg")
        (xmlns:xlink . "http://www.w3.org/1999/xlink"))
-     (dom-children node))))
+     (edie-ml--svg-nodes (dom-children node)))))
+
+(defun edie-ml--svg-nodes (nodes)
+  ""
+  (let ((svgs nil))
+    (dolist (n nodes (nreverse svgs))
+      (push (edie-ml-svg n) svgs))))
 
 (provide 'edie-ml)
 ;;; edie-ml.el ends here
