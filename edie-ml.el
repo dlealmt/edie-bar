@@ -30,11 +30,11 @@
 
 (eval-when-compile
   (require 'cl-lib)
+  (require 'dom)
   (require 'map)
   (require 'pcase)
   (require 'subr-x))
 
-(require 'dom)
 (require 'map)
 (require 'xml)
 
