@@ -46,7 +46,7 @@
 (defun edie-ml--render (spec)
   ""
   (if (listp spec)
-    (let ((node (edie-ml-render spec))
+    (let ((node spec)
           next new)
       (while (not (eq node (setq next (edie-ml-render node))))
         (setq node next))
