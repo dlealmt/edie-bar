@@ -43,7 +43,7 @@
 (defvar edie-ml-unit-x 10.5)
 (defvar edie-ml-unit-y nil)
 
-(defun edie-ml (spec)
+(defun edie-ml--render (spec)
   ""
   (if (listp spec)
     (let ((node (edie-ml-render spec))
@@ -52,13 +52,13 @@
         (setq node next))
       (setq new (seq-take node 2))
       (dolist (c (dom-children node) new)
-        (dom-append-child new (edie-ml c))))
+        (dom-append-child new (edie-ml--render c))))
     spec))
 
 (defun edie-ml-create-image (spec)
   ""
   (thread-first
-    (edie-ml spec)
+    (edie-ml--render spec)
     (edie-ml-svg)
     (create-image 'svg t :scale 1)))
 
