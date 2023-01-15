@@ -46,9 +46,9 @@
 (defun edie-ml (spec)
   ""
   (if (listp spec)
-    (let ((node (edie-ml-parse spec))
+    (let ((node (edie-ml-render spec))
           next new)
-      (while (not (eq node (setq next (edie-ml-parse node))))
+      (while (not (eq node (setq next (edie-ml-render node))))
         (setq node next))
       (setq new (seq-take node 2))
       (dolist (c (dom-children node) new)
@@ -74,7 +74,7 @@
              tag))
     (_ (error "Don't know how to convert `%S' to string" spec))))
 
-(cl-defgeneric edie-ml-parse (node)
+(cl-defgeneric edie-ml-render (node)
   ""
   node)
 
@@ -165,7 +165,7 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
                                attributes)))
     (dom-node 'rect svg-attrs)))
 
-(cl-defmethod edie-ml-parse ((node (head text)))
+(cl-defmethod edie-ml-render ((node (head text)))
   ""
   (if (listp (car (dom-children node)))
       node
@@ -199,7 +199,7 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
       (edie-ml--text (nreverse tspans) backgrounds))))
 
 ;; widget
-(cl-defmethod edie-ml-parse ((node (head widget)))
+(cl-defmethod edie-ml-render ((node (head widget)))
   ""
   (pcase-let* ((edie-ml-unit-x (or edie-ml-unit-x (frame-char-width)))
                (edie-ml-unit-y (or edie-ml-unit-y (frame-char-height)))
