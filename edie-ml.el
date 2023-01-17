@@ -123,14 +123,12 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
   ""
   (let ((default-attrs (edie-ml--face-attributes-to-svg
                         (face-all-attributes 'default (selected-frame)))))
-    (apply
-     #'dom-node
+    (edie-ml--make-node
      'g
-     '((height . "100%"))
+     `((height . "100%"))
      (nconc
       backgrounds
-      (list (apply
-             #'dom-node
+      (list (edie-ml--make-node
              'text
              (map-merge
               'alist
@@ -207,14 +205,9 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
   (pcase-let* ((edie-ml-unit-x (or edie-ml-unit-x (frame-char-width)))
                (edie-ml-unit-y (or edie-ml-unit-y (frame-char-height)))
                ((map height width) (dom-attributes node)))
-    (apply
-     #'dom-node
-     'svg
+    (edie-ml--make-svg-node
      `((width . ,(or (and width (* width edie-ml-unit-x)) (frame-pixel-width)))
-       (height . ,(or (and height (* height edie-ml-unit-y)) (frame-pixel-height)))
-       (version . "1.1")
-       (xmlns . "http://www.w3.org/2000/svg")
-       (xmlns:xlink . "http://www.w3.org/1999/xlink"))
+       (height . ,(or (and height (* height edie-ml-unit-y)) (frame-pixel-height))))
      (edie-ml--svg-nodes (dom-children node)))))
 
 (defun edie-ml--svg-nodes (nodes)
@@ -222,6 +215,20 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
   (let ((svgs nil))
     (dolist (n nodes (nreverse svgs))
       (push (edie-ml-svg n) svgs))))
+
+(defun edie-ml--make-svg-node (attributes children)
+  (edie-ml--make-node
+   'svg
+   (map-merge
+    'alist
+    attributes
+    '((version . "1.1")
+      (xmlns . "http://www.w3.org/2000/svg")
+      (xmlns:xlink . "http://www.w3.org/1999/xlink")))
+   children))
+
+(defun edie-ml--make-node (tag attributes children)
+  (apply #'dom-node tag attributes children))
 
 (provide 'edie-ml)
 ;;; edie-ml.el ends here
