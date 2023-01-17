@@ -61,5 +61,16 @@
             (format-time-string "%H:%M")
             :id "edie-bar-clock--text" :fill "#fff" :x 0 :y 22))
 
+(cl-defmethod edie-ml-render ((node (head clock)))
+  ""
+  (pcase-let* ((format (car (dom-children node)))
+               ((seq before after) (string-split format "%i"))
+               (time (format-time-string (or after before))))
+    `(widget nil
+       (text nil ,before)
+       ,(when after
+          `(icon nil "clock-time-three"))
+       (text nil ,time))))
+
 (provide 'edie-bar-clock)
 ;;; edie-bar-clock.el ends here
