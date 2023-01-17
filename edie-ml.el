@@ -55,10 +55,18 @@
         (dom-append-child new (edie-ml--render c))))
     spec))
 
+(defun edie-ml--measure (spec)
+  (when (listp spec)
+    (dolist (c (dom-children spec))
+      (edie-ml--measure c)))
+  (edie-ml-measure spec)
+  spec)
+
 (defun edie-ml-create-image (spec)
   ""
   (thread-first
     (edie-ml--render spec)
+    (edie-ml--measure)
     (edie-ml-svg)
     (edie-ml--stringify)
     (create-image 'svg t :scale 1)))
@@ -79,7 +87,14 @@
   ""
   node)
 
+(cl-defgeneric edie-ml-measure (node)
+  ""
+  node)
+
 (cl-defgeneric edie-ml-svg (node))
+
+(cl-defmethod edie-ml-measure ((_ string))
+  nil)
 
 ;; text
 
@@ -119,13 +134,13 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
        ((eq attr :height) (push (cons 'font-size (format "%fpt" (/ val 10.0))) alist))
        ((eq attr :background) (push (cons 'fill val) alist))))))
 
-(defun edie-ml--text (tspans backgrounds)
+(defun edie-ml--text (node tspans backgrounds)
   ""
   (let ((default-attrs (edie-ml--face-attributes-to-svg
                         (face-all-attributes 'default (selected-frame)))))
-    (edie-ml--make-node
-     'g
-     `((height . "100%"))
+    (edie-ml--make-svg-node
+     `((height . "100%")
+       (width . ,(dom-attr node 'width)))
      (nconc
       backgrounds
       (list (edie-ml--make-node
@@ -166,6 +181,10 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
                                attributes)))
     (dom-node 'rect svg-attrs)))
 
+(cl-defmethod edie-ml-measure ((node (head text)))
+  (unless (dom-attr node 'width)
+    (dom-set-attribute node 'width (* (frame-char-width) (length (dom-texts node))))))
+
 (cl-defmethod edie-ml-svg ((node (head text)))
   ""
   (if (listp (car (dom-children node)))
@@ -197,7 +216,7 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
            (t
             (push this-bg backgrounds)))
           (setq point next-point)))
-      (edie-ml--text (nreverse tspans) backgrounds))))
+      (edie-ml--text node (nreverse tspans) backgrounds))))
 
 ;; widget
 (cl-defmethod edie-ml-svg ((node (head widget)))
