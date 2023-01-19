@@ -100,8 +100,7 @@
   (with-selected-frame (edie-bar-frame)
     (propertize (substring-no-properties message)
                 'display (edie-ml-create-image
-                          `(widget nil
-                            (text nil ,message))))))
+                          `(text nil ,message)))))
 
 (defun edie-bar-command-error (data _ _)
   ""
@@ -112,8 +111,7 @@
     (append
      (list (propertize (substring-no-properties str)
                        'display (edie-ml-create-image
-                                 `(widget ((width . ,(length str)))
-                                    (text nil ,str)))))
+                                 `(text nil ,str))))
      args)))
 
 (provide 'edie-bar)

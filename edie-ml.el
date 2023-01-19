@@ -55,21 +55,27 @@
         (dom-append-child new (edie-ml--render c))))
     spec))
 
-(defun edie-ml--measure (spec)
+(defun edie-ml--measure (spec parent)
+  (edie-ml-measure spec parent)
   (when (listp spec)
     (dolist (c (dom-children spec))
-      (edie-ml--measure c)))
-  (edie-ml-measure spec)
+      (edie-ml--measure c spec)))
+  (edie-ml-measure spec parent)
   spec)
 
 (defun edie-ml-create-image (spec)
   ""
-  (thread-first
-    (edie-ml--render spec)
-    (edie-ml--measure)
-    (edie-ml-svg)
-    (edie-ml--stringify)
-    (create-image 'svg t :scale 1)))
+  (let ((frame (dom-node
+                'frame
+                `((width . ,(frame-pixel-width))
+                  (height . ,(frame-pixel-height)))
+                spec)))
+    (thread-first
+      (edie-ml--render spec)
+      (edie-ml--measure frame)
+      (edie-ml-svg)
+      (edie-ml--stringify)
+      (create-image 'svg t :scale 1))))
 
 (cl-defun edie-ml--stringify (spec)
   ""
@@ -87,13 +93,14 @@
   ""
   node)
 
-(cl-defgeneric edie-ml-measure (node)
+(cl-defgeneric edie-ml-measure (node parent)
   ""
-  node)
+  (unless (dom-attr node 'height)
+    (dom-set-attribute node 'height (dom-attr parent 'height))))
 
 (cl-defgeneric edie-ml-svg (node))
 
-(cl-defmethod edie-ml-measure ((_ string))
+(cl-defmethod edie-ml-measure ((_ string) _parent)
   nil)
 
 ;; text
@@ -139,7 +146,7 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
   (let ((default-attrs (edie-ml--face-attributes-to-svg
                         (face-all-attributes 'default (selected-frame)))))
     (edie-ml--make-svg-node
-     `((height . "100%")
+     `((height . ,(dom-attr node 'height))
        (width . ,(dom-attr node 'width)))
      (nconc
       backgrounds
@@ -181,7 +188,9 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
                                attributes)))
     (dom-node 'rect svg-attrs)))
 
-(cl-defmethod edie-ml-measure ((node (head text)))
+(cl-defmethod edie-ml-measure ((node (head text)) parent)
+  (unless (dom-attr node 'height)
+    (dom-set-attribute node 'height (dom-attr parent 'height)))
   (unless (dom-attr node 'width)
     (dom-set-attribute node 'width (* (frame-char-width) (length (dom-texts node))))))
 
