@@ -151,7 +151,8 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
                         (face-all-attributes 'default (selected-frame)))))
     (edie-ml--make-svg-node
      `((height . ,(dom-attr node 'height))
-       (width . ,(dom-attr node 'width)))
+       (width . ,(dom-attr node 'width))
+       (x . ,(dom-attr node 'x)))
      (nconc
       backgrounds
       (list (edie-ml--make-node
