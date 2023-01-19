@@ -266,6 +266,31 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
   ""
   (edie-ml--make-svg-node (dom-attributes node) (edie-ml--svg-nodes (dom-children node))))
 
+;; icon
+(cl-defmethod edie-ml-measure ((node (head icon)) parent)
+  (let* ((size (dom-attr node 'size))
+         (ph (dom-attr parent 'height))
+         (y (/ (- ph (or size 0)) 2.0)))
+    (dom-set-attribute node 'width (or size ph))
+    (dom-set-attribute node 'height (or size ph))
+    (dom-set-attribute node 'y y)))
+
+(cl-defmethod edie-ml-svg ((node (head icon)))
+  ""
+  (let ((svg (thread-last
+               (file-name-concat edie-ml-icon-directory (car (dom-children node)))
+               (format "%s.svg")
+               (xml-parse-file)
+               (car)))
+        (width (dom-attr node 'width))
+        (height (dom-attr node 'height)))
+    (dom-set-attribute svg 'width width)
+    (dom-set-attribute svg 'height height)
+    (dom-set-attribute svg 'x (dom-attr node 'x))
+    (dom-set-attribute svg 'y (dom-attr node 'y))
+    (dom-set-attribute svg 'viewBox (format "0 0 %d %d" width height))
+    svg))
+
 ;; widget
 (cl-defmethod edie-ml-svg ((node (head widget)))
   ""
