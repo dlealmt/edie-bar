@@ -232,6 +232,16 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
           (setq point next-point)))
       (edie-ml--text node (nreverse tspans) backgrounds))))
 
+;; bar
+(cl-defmethod edie-ml-measure ((node (head bar)) parent)
+  (when (and (not (dom-attr node 'width)) (dom-attr parent 'width))
+    (dom-set-attribute node 'width (dom-attr parent 'width)))
+  (unless (dom-attr node 'height)
+    (dom-set-attribute node 'height (dom-attr parent 'height))))
+
+(cl-defmethod edie-ml-svg ((node (head bar)))
+  (edie-ml--make-svg-node (dom-attributes node) (edie-ml--svg-nodes (dom-children node))))
+
 ;; box
 (cl-defmethod edie-ml-measure ((node (head box)) parent)
   (unless (dom-attr node 'width)
