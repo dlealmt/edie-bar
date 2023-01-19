@@ -63,8 +63,7 @@
   (edie-ml-measure spec parent)
   spec)
 
-(defun edie-ml-create-image (spec)
-  ""
+(defun edie-ml--svg (spec)
   (let ((frame (dom-node
                 'frame
                 `((width . ,(frame-pixel-width))
@@ -73,9 +72,14 @@
     (thread-first
       (edie-ml--render spec)
       (edie-ml--measure frame)
-      (edie-ml-svg)
-      (edie-ml--stringify)
-      (create-image 'svg t :scale 1))))
+      (edie-ml-svg))))
+
+(defun edie-ml-create-image (spec)
+  ""
+  (thread-first
+    (edie-ml--svg spec)
+    (edie-ml--stringify)
+    (create-image 'svg t :scale 1)))
 
 (cl-defun edie-ml--stringify (spec)
   ""
