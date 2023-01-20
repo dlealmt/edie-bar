@@ -142,7 +142,7 @@ so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
       (cond
        ((eq attr :family) (push (cons 'font-family val) alist))
        ((eq attr :foreground) (push (cons 'fill val) alist))
-       ((eq attr :height) (push (cons 'font-size (format "%fpt" (/ val 10.0))) alist))
+       ((eq attr :height) (push (cons 'font-size (* (/ val 10.0) 1.33333333)) alist))
        ((eq attr :background) (push (cons 'fill val) alist))))))
 
 (defun edie-ml--text (node tspans backgrounds)
