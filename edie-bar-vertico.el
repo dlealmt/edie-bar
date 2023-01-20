@@ -45,13 +45,16 @@
   (with-selected-frame (edie-bar-frame)
     (let* ((char-height (frame-char-height))
            (height (/ (frame-pixel-height) (float char-height)))
-           (candidates-string (string-join candidates))
-           (image (edie-ml-create-image `(text nil ,candidates-string))))
+           (candidates-string (string-join candidates)))
       (move-overlay vertico--candidates-ov (point-max) (point-max))
       (overlay-put vertico--candidates-ov 'after-string
                    (concat #(" " 0 1 (cursor t))
-                           (propertize (substring-no-properties candidates-string)
-                                       'display image))))))
+                           (edie-widget-propertize
+                            (substring-no-properties candidates-string)
+                            `(box nil
+                              ,@(let ((elts nil))
+                                  (dolist (c candidates (nreverse elts))
+                                    (push `(text nil ,c) elts))))))))))
 
 (defun edie-bar-vertico--arrange-candidates ()
   ""
@@ -64,7 +67,7 @@
       (while (and (setq candidate (pop collection)) (> width 0))
         (when (text-property-any 0 (length candidate) 'invisible t candidate)
           (setq candidate (substring candidate 0 (1- (length candidate)))))
-        (setq candidate (format " %s " candidate))
+        (setq candidate (string-trim candidate))
         (setq width (- width (string-width candidate)))
         (push candidate candidates))
       (prog1 (setq candidates (nreverse candidates))
@@ -74,8 +77,7 @@
 (defun edie-bar-vertico-format-count (count)
   ""
   (with-selected-frame (edie-bar-frame)
-    (propertize (substring-no-properties count)
-                'display (edie-ml-create-image `(text nil ,count)))))
+    (edie-widget-propertize count `(text nil ,count))))
 
 (defun edie-bar-vertico--candidates-width ()
   (- (frame-width) (car (posn-col-row (posn-at-point (1- (point-max)))))))

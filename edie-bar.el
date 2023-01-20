@@ -33,12 +33,17 @@
   (require 'subr-x))
 
 (require 'edie-ml)
+(require 'edie-widget)
 (require 'map)
 (require 'svg)
 
 (defgroup edie-bar nil
   "Settings for Edie bar."
   :group 'edie)
+
+(defcustom edie-bar-spec nil
+  nil
+  :type 'sexp)
 
 (defcustom edie-bar-default-frame-alist
   '((border-width . 0)
@@ -98,9 +103,7 @@
 (defun edie-bar-set-message (message)
   ""
   (with-selected-frame (edie-bar-frame)
-    (propertize (substring-no-properties message)
-                'display (edie-ml-create-image
-                          `(text nil ,message)))))
+    (edie-widget-propertize message `(text nil ,message))))
 
 (defun edie-bar-command-error (data _ _)
   ""
@@ -109,10 +112,12 @@
 (cl-defun edie-bar-svg-prompt ((str &rest args))
   (with-selected-frame (edie-bar-frame)
     (append
-     (list (propertize (substring-no-properties str)
-                       'display (edie-ml-create-image
-                                 `(text nil ,str))))
+     (list (edie-widget-propertize str `(text nil ,str)))
      args)))
+
+(cl-defmethod edie-widget-render (((_ attributes &rest children) (head bar)) _)
+  ""
+  `(box ,attributes ,@children))
 
 (provide 'edie-bar)
 ;;; edie-bar.el ends here

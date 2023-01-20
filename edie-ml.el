@@ -35,52 +35,198 @@
   (require 'pcase)
   (require 'subr-x))
 
+(require 'dom)
 (require 'map)
 (require 'xml)
 
 (defvar edie-ml-icon-directory "~/.cache/material-design/svg")
 
-(defvar edie-ml-unit-x 10.5)
-(defvar edie-ml-unit-y nil)
+(defcustom edie-ml-icon-padding-top 0
+  nil
+  :type 'natnum)
 
-(defun edie-ml--render (spec)
+(defcustom edie-ml-icon-size 24
+  nil
+  :type 'natnum)
+
+(defcustom edie-ml-text-padding-top 0
+  nil
+  :type 'natnum)
+
+(defvar edie-ml--dom nil)
+
+(defun edie-ml-render-svg (spec)
   ""
-  (if (listp spec)
-    (let ((node spec)
-          next new)
-      (while (not (eq node (setq next (edie-ml-render node))))
-        (setq node next))
-      (setq new (seq-take node 2))
-      (dolist (c (dom-children node) new)
-        (dom-append-child new (edie-ml--render c))))
-    spec))
+  (let ((edie-ml--dom `(frame ((frame . ,(selected-frame))) ,(copy-tree spec))))
+    (edie-ml-svg edie-ml--dom)))
 
-(defun edie-ml--measure (spec parent)
-  (edie-ml-measure spec parent)
-  (when (listp spec)
-    (dolist (c (dom-children spec))
-      (edie-ml--measure c spec)))
-  (edie-ml-measure spec parent)
-  spec)
-
-(defun edie-ml--svg (spec)
-  (let ((frame (dom-node
-                'frame
-                `((width . ,(frame-pixel-width))
-                  (height . ,(frame-pixel-height)))
-                spec)))
-    (thread-first
-      (edie-ml--render spec)
-      (edie-ml--measure frame)
-      (edie-ml-svg))))
-
-(defun edie-ml-create-image (spec)
+(defun edie-ml-create-image (svg)
   ""
-  (thread-first
-    (edie-ml--svg spec)
-    (edie-ml--stringify)
-    (create-image 'svg t :scale 1)))
+  (create-image (edie-ml--stringify svg) 'svg t :scale 1))
 
+(defun edie-ml-insert-image (svg)
+  (let* ((marker (point-marker))
+         (image (edie-ml-create-image svg)))
+    (insert-image image)
+    (dom-set-attribute svg 'image marker)))
+
+(cl-defgeneric edie-ml-svg (node))
+
+(cl-defgeneric edie-ml-width (node))
+
+(cl-defgeneric edie-ml-height (node))
+
+(cl-defgeneric edie-ml-x (node))
+
+(cl-defgeneric edie-ml-y (node))
+
+(cl-defgeneric edie-ml-child-x (parent child))
+
+(cl-defgeneric edie-ml-child-y (parent child ))
+
+;; frame
+(cl-defmethod edie-ml-width ((frame (head frame)))
+  (frame-pixel-width (dom-attr frame 'frame)))
+
+(cl-defmethod edie-ml-height ((frame (head frame)))
+  (frame-pixel-height (dom-attr frame 'frame)))
+
+(cl-defmethod edie-ml-svg ((frame (head frame)))
+  (edie-ml-svg (car (edie-ml--children frame))))
+
+(cl-defmethod edie-ml-child-x ((frame (head frame)) child)
+  0)
+
+;; box
+(cl-defmethod edie-ml-width ((box (head box)))
+  (if-let ((w (dom-attr box 'width)))
+      w
+    (let ((total 0))
+      (dolist (c (edie-ml--children box))
+        (when-let ((w (edie-ml-width c)))
+          (setq total (+ total w))))
+      total)))
+
+(cl-defmethod edie-ml-height ((box (head box)))
+  (edie-ml-height (edie-ml--parent box)))
+
+(cl-defmethod edie-ml-x ((box (head box)))
+  (edie-ml-child-x (edie-ml--parent box) box))
+
+(cl-defmethod edie-ml-y ((_ (head box)))
+  0)
+
+(cl-defmethod edie-ml-child-x ((box (head box)) child)
+  (pcase-let* ((x 0)
+               ((seq head &rest rest) (edie-ml--children box)))
+    (while (and head (not (eq head child)))
+      (setq x (+ x (edie-ml-width head)))
+      (setq head (car rest)
+            rest (cdr rest)))
+    x))
+
+(cl-defmethod edie-ml-svg ((node (head box)))
+  ""
+  (let ((width (edie-ml-width node))
+        x transform)
+    (cond
+     ((eq (dom-attr node 'align) 'right)
+      (setq transform (format "translate(-%d)" width))
+      (setq x (edie-ml-inner-width (edie-ml--parent node))))
+     (t
+      (setq transform "none")
+      (setq x (edie-ml-x node))))
+    (edie-ml--make-svg-node
+     (map-merge
+      'alist
+      `((width . ,width)
+        (height . ,(edie-ml-height node))
+        (x . ,x)
+        (y . ,(edie-ml-y node))
+        (transform . ,transform)))
+     (edie-ml--svg-list (edie-ml--children node)))))
+
+;; icon
+(cl-defmethod edie-ml-width ((node (head icon)))
+  edie-ml-icon-size)
+
+(cl-defmethod edie-ml-height ((node (head icon)))
+  edie-ml-icon-size)
+
+(cl-defmethod edie-ml-x ((icon (head icon)))
+  (edie-ml-child-x (edie-ml--parent icon) icon))
+
+(cl-defmethod edie-ml-y ((icon (head icon)))
+  (+ (/ (- (edie-ml-height (edie-ml--parent icon)) (edie-ml-height icon)) 2)
+     edie-ml-icon-padding-top))
+
+(cl-defmethod edie-ml-svg ((node (head icon)))
+  ""
+  (let ((svg (thread-last
+               (file-name-concat edie-ml-icon-directory (dom-attr node 'name))
+               (format "%s.svg")
+               (xml-parse-file)
+               (car)))
+        (width (edie-ml-width node))
+        (height (edie-ml-height node)))
+    (dom-set-attribute svg 'width (edie-ml-width node))
+    (dom-set-attribute svg 'height (edie-ml-height node))
+    (dom-set-attribute svg 'x (edie-ml-x node))
+    (dom-set-attribute svg 'y (edie-ml-y node))
+    (dom-set-attribute svg 'viewBox (format "0 0 %d %d" width height))
+    svg))
+
+;; text
+(cl-defmethod edie-ml-width ((text (head text)))
+  (* (frame-char-width) (length (dom-text text))))
+
+(cl-defmethod edie-ml-height ((text (head text)))
+  (edie-ml-height (edie-ml--parent text)))
+
+(cl-defmethod edie-ml-x ((text (head text)))
+  (edie-ml-child-x (edie-ml--parent text) text))
+
+(cl-defmethod edie-ml-y ((text (head text)))
+  (let* ((pheight (edie-ml-height (edie-ml--parent text))))
+    (+ edie-ml-text-padding-top (/ pheight 2))))
+
+(cl-defmethod edie-ml-svg ((node (head text)))
+  ""
+  (let* ((string (car (edie-ml--children node)))
+         (cwidth (frame-char-width))
+         (from 0)
+         (svg (edie-ml--make-svg-node `((width . ,(edie-ml-width node))
+                                        (height . ,(edie-ml-height node))
+                                        (x . ,(edie-ml-x node)))
+                                      nil)))
+    (while from
+      (let* ((to (next-single-property-change from 'face string))
+             (face (plist-get (text-properties-at from string) 'face))
+             (fg (edie-ml--face-attribute face :foreground))
+             (bg (edie-ml--face-attribute face :background))
+             (family (edie-ml--face-attribute face :family))
+             (substr (substring-no-properties string from to))
+             (svg-substr (edie-ml--make-svg-node
+                          `((x . ,(* from cwidth))
+                            (width . ,(* cwidth (length substr)))
+                            (height . ,(edie-ml-height node)))
+                          (list
+                           (dom-node 'rect `((width . "100%") (height . "100%") (fill . ,bg)))
+                           (dom-node 'text `((fill . ,fg)
+                                             (y . ,(edie-ml-y node))
+                                             (font-family . ,family))
+                                     (xml-escape-string substr))))))
+        (dom-append-child svg svg-substr)
+        (setq from to)))
+    svg))
+
+(defun edie-ml--face-attribute (faces attribute)
+  (let ((faces (append (ensure-list faces) '(default)))
+        value)
+    (while (not value)
+      (setq value (face-attribute-specified-or (face-attribute (pop faces) attribute) nil)))
+    value))
+
 (cl-defun edie-ml--stringify (spec)
   ""
   (pcase spec
@@ -93,234 +239,38 @@
              tag))
     (_ (error "Don't know how to convert `%S' to string" spec))))
 
-(cl-defgeneric edie-ml-render (node)
-  ""
-  node)
-
-(cl-defgeneric edie-ml-measure (node parent)
-  ""
-  (unless (dom-attr node 'height)
-    (dom-set-attribute node 'height (dom-attr parent 'height))))
-
-(cl-defgeneric edie-ml-svg (node))
-
-(cl-defmethod edie-ml-measure ((_ string) _parent)
-  nil)
-
-;; text
-
-(defun edie-ml--specified-face-attributes (face attribute-filter)
-  ""
-  (let ((all (face-all-attributes face (selected-frame)))
-        (filtered nil))
-    (pcase-dolist (`(,attr . ,val) all filtered)
-      (when (and (not (eq val 'unspecified)) (memq attr attribute-filter))
-        (setf (alist-get attr filtered) val)))))
-
-(defun edie-ml--face-attributes-at (point str attribute-filter)
-  "Get a subset of face attributes at POINT in STR.
-
-ATTRIBUTE-FILTER is the list of face attributes that interest us.
-
-Only returns attributes that are specified (i.e., their value is
-something other than `unspecified') for the faces found at point"
-  (when-let ((props (text-properties-at point str))
-             (face-prop (plist-get props 'face)))
-    (let ((attrs nil))
-      (dolist (face (if (listp face-prop) face-prop (list face-prop)) attrs)
-        (setq attrs (map-merge 'alist
-                               (edie-ml--specified-face-attributes face attribute-filter)
-                               attrs))))))
-
-(defun edie-ml--face-attributes-to-svg (face-attributes)
-  "Convert FACE-ATTRIBUTES to SVG presentation attributes.
-
-The `:foreground' and `:background' attributes both map to `fill'
-so if both are in FACE-ATTRIBUTES, `fill' will be overwritten."
-  (let ((alist nil))
-    (pcase-dolist (`(,attr . ,val) face-attributes alist)
-      (cond
-       ((eq attr :family) (push (cons 'font-family val) alist))
-       ((eq attr :foreground) (push (cons 'fill val) alist))
-       ((eq attr :height) (push (cons 'font-size (* (/ val 10.0) 1.33333333)) alist))
-       ((eq attr :background) (push (cons 'fill val) alist))))))
-
-(defun edie-ml--text (node tspans backgrounds)
-  ""
-  (let ((default-attrs (edie-ml--face-attributes-to-svg
-                        (face-all-attributes 'default (selected-frame)))))
-    (edie-ml--make-svg-node
-     `((height . ,(dom-attr node 'height))
-       (width . ,(dom-attr node 'width))
-       (x . ,(dom-attr node 'x)))
-     (nconc
-      backgrounds
-      (list (edie-ml--make-node
-             'text
-             (map-merge
-              'alist
-              default-attrs
-              '((y . "50%")
-                (dominant-baseline . "middle")
-                ("xml:space" . "preserve")))
-             tspans))))))
-
-(defun edie-ml--text-span (string)
-  ""
-  (let* ((base-attrs (thread-last
-                       '(:family :foreground :height)
-                       (edie-ml--face-attributes-at 0 string)
-                       (edie-ml--face-attributes-to-svg)))
-         (svg-attrs (map-merge 'alist
-                               `((alignment-baseline . "central"))
-                               base-attrs)))
-    (dom-node 'tspan svg-attrs (xml-escape-string (substring-no-properties string)))))
-
-(defun edie-ml--text-background (string attributes)
-  ""
-  (let* ((default-attrs (edie-ml--face-attributes-to-svg
-                         (edie-ml--specified-face-attributes 'default '(:background))))
-         (base-attrs (thread-last
-                       '(:background)
-                       (edie-ml--face-attributes-at 0 string)
-                       (edie-ml--face-attributes-to-svg)))
-         (svg-attrs (map-merge 'alist
-                               `((x . ,(* (alist-get 'x attributes) edie-ml-unit-x))
-                                 (width . ,(* (length string) edie-ml-unit-x))
-                                 (height . "100%"))
-                               default-attrs
-                               base-attrs
-                               attributes)))
-    (dom-node 'rect svg-attrs)))
-
-(cl-defmethod edie-ml-measure ((node (head text)) parent)
-  (unless (dom-attr node 'height)
-    (dom-set-attribute node 'height (dom-attr parent 'height)))
-  (unless (dom-attr node 'width)
-    (dom-set-attribute node 'width (* (frame-char-width) (length (dom-texts node))))))
-
-(cl-defmethod edie-ml-svg ((node (head text)))
-  ""
-  (if (listp (car (dom-children node)))
-      node
-    (let ((string (car (dom-children node)))
-          (point 0)
-          (tspans nil)
-          (backgrounds nil))
-      (while point
-        (let* ((next-point (next-single-property-change point 'face string))
-               (string (substring string point next-point))
-               (this-text (edie-ml--text-span string))
-               (prev-text (car tspans))
-               (this-bg (edie-ml--text-background string `((x . ,point))))
-               (prev-bg (car backgrounds)))
-          (cond
-           ((not this-text)
-            (error "`this-text' should always be set"))
-           ((equal (dom-attributes this-text) (dom-attributes prev-text))
-            (dom-append-child prev-text (dom-text this-text)))
-           (t
-            (push this-text tspans)))
-          (cond
-           ((not prev-bg)
-            (push this-bg backgrounds))
-           ((equal (dom-attr this-bg 'fill) (dom-attr prev-bg 'fill))
-            (dom-set-attribute
-             prev-bg 'width (+ (dom-attr prev-bg 'width) (dom-attr this-bg 'width))))
-           (t
-            (push this-bg backgrounds)))
-          (setq point next-point)))
-      (edie-ml--text node (nreverse tspans) backgrounds))))
-
-;; bar
-(cl-defmethod edie-ml-measure ((node (head bar)) parent)
-  (when (and (not (dom-attr node 'width)) (dom-attr parent 'width))
-    (dom-set-attribute node 'width (dom-attr parent 'width)))
-  (unless (dom-attr node 'height)
-    (dom-set-attribute node 'height (dom-attr parent 'height))))
-
-(cl-defmethod edie-ml-svg ((node (head bar)))
-  (edie-ml--make-svg-node (dom-attributes node) (edie-ml--svg-nodes (dom-children node))))
-
-;; box
-(cl-defmethod edie-ml-measure ((node (head box)) parent)
-  (unless (dom-attr node 'width)
-    (let ((total 0))
-      (dolist (c (dom-children node))
-        (when (dom-attr c 'width)
-          (unless (dom-attr c 'x)
-            (dom-set-attribute c 'x total))
-          (setq total (+ total (dom-attr c 'width)))))
-      (when (> total 0)
-        (dom-set-attribute node 'width total))))
-  (unless (dom-attr node 'height)
-    (dom-set-attribute node 'height (dom-attr parent 'height)))
-  (cond
-   ((eq (dom-attr node 'align) 'right)
-    (when-let ((width (dom-attr node 'width)))
-      (dom-set-attribute node 'transform (format "translate(-%d)" width)))
-    (when-let ((x (dom-attr parent 'width)))
-      (dom-set-attribute node 'x x)))))
-
-(cl-defmethod edie-ml-svg ((node (head box)))
-  ""
-  (edie-ml--make-svg-node (dom-attributes node) (edie-ml--svg-nodes (dom-children node))))
-
-;; icon
-(cl-defmethod edie-ml-measure ((node (head icon)) parent)
-  (let* ((size (dom-attr node 'size))
-         (ph (dom-attr parent 'height))
-         (y (/ (- ph (or size 0)) 2.0)))
-    (dom-set-attribute node 'width (or size ph))
-    (dom-set-attribute node 'height (or size ph))
-    (dom-set-attribute node 'y y)))
-
-(cl-defmethod edie-ml-svg ((node (head icon)))
-  ""
-  (let ((svg (thread-last
-               (file-name-concat edie-ml-icon-directory (car (dom-children node)))
-               (format "%s.svg")
-               (xml-parse-file)
-               (car)))
-        (width (dom-attr node 'width))
-        (height (dom-attr node 'height)))
-    (dom-set-attribute svg 'width width)
-    (dom-set-attribute svg 'height height)
-    (dom-set-attribute svg 'x (dom-attr node 'x))
-    (dom-set-attribute svg 'y (dom-attr node 'y))
-    (dom-set-attribute svg 'viewBox (format "0 0 %d %d" width height))
-    svg))
-
-;; widget
-(cl-defmethod edie-ml-svg ((node (head widget)))
-  ""
-  (pcase-let* ((edie-ml-unit-x (or edie-ml-unit-x (frame-char-width)))
-               (edie-ml-unit-y (or edie-ml-unit-y (frame-char-height)))
-               ((map height width) (dom-attributes node)))
-    (edie-ml--make-svg-node
-     `((width . ,(or (and width (* width edie-ml-unit-x)) (frame-pixel-width)))
-       (height . ,(or (and height (* height edie-ml-unit-y)) (frame-pixel-height))))
-     (edie-ml--svg-nodes (dom-children node)))))
-
-(defun edie-ml--svg-nodes (nodes)
-  ""
-  (let ((svgs nil))
-    (dolist (n nodes (nreverse svgs))
-      (push (edie-ml-svg n) svgs))))
-
 (defun edie-ml--make-svg-node (attributes children)
   (edie-ml--make-node
    'svg
    (map-merge
     'alist
     attributes
-    '((version . "1.1")
-      (xmlns . "http://www.w3.org/2000/svg")
-      (xmlns:xlink . "http://www.w3.org/1999/xlink")))
+    '((xmlns . "http://www.w3.org/2000/svg")
+      (xmlns:edie . "http://github.com/dleal-mojotech/edie")))
    children))
+
+(defun edie-ml--svg-list (nodes )
+  (let (lst)
+    (dolist (n nodes (nreverse lst))
+      (push (edie-ml-svg n) lst))))
+
+(defun edie-ml--copy-if-unset (to from &rest attributes)
+  (dolist (attr attributes)
+    (unless (dom-attr to attr)
+      (cl-assert (dom-attr from attr))
+      (dom-set-attribute to attr (dom-attr from attr)))))
 
 (defun edie-ml--make-node (tag attributes children)
   (apply #'dom-node tag attributes children))
+
+(defun edie-ml--parent (node)
+  (dom-parent edie-ml--dom node))
+
+(defalias 'edie-ml--children #'dom-children)
+
+(defun edie-ml-inner-width (node)
+  (let-alist (dom-attributes node)
+    (- .width (* (or .pad-x 0) 2))))
 
 (provide 'edie-ml)
 ;;; edie-ml.el ends here
