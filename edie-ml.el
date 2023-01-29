@@ -101,11 +101,13 @@
 (cl-defmethod edie-ml-width ((box (head box)))
   (if-let ((w (dom-attr box 'width)))
       w
-    (let ((total 0))
+    (let ((total 0)
+          (spacing (or (dom-attr box 'spacing) 0))
+          (pad-x (or (dom-attr box 'pad-x) 0)))
       (dolist (c (edie-ml--children box))
         (when-let ((w (edie-ml-width c)))
           (setq total (+ total w))))
-      total)))
+      (+ total (* (1- (length (dom-children box))) spacing) (* pad-x 2)))))
 
 (cl-defmethod edie-ml-height ((box (head box)))
   (edie-ml-height (edie-ml--parent box)))
@@ -117,33 +119,39 @@
   0)
 
 (cl-defmethod edie-ml-child-x ((box (head box)) child)
-  (pcase-let* ((x 0)
-               ((seq head &rest rest) (edie-ml--children box)))
-    (while (and head (not (eq head child)))
-      (setq x (+ x (edie-ml-width head)))
-      (setq head (car rest)
-            rest (cdr rest)))
-    x))
+  (+ (or (dom-attr box 'pad-x) 0)
+     (cond
+      ((eq (dom-attr child 'align) 'right)
+       (edie-ml-inner-width box))
+      (t
+       (pcase-let* ((x 0)
+                    (spacing (or (dom-attr box 'spacing) 0))
+                    ((seq head &rest rest) (edie-ml--children box)))
+         (while (and head (not (eq head child)))
+           (setq x (+ x (edie-ml-width head) spacing))
+           (setq head (car rest)
+                 rest (cdr rest)))
+         x)))))
+
+(cl-defmethod edie-ml-transform (node)
+  (cond
+   ((eq (dom-attr node 'align) 'right)
+    (format "translate(-%d)" (edie-ml-width node)))
+   (t
+    "none")))
 
 (cl-defmethod edie-ml-svg ((node (head box)))
   ""
   (let ((width (edie-ml-width node))
         x transform)
-    (cond
-     ((eq (dom-attr node 'align) 'right)
-      (setq transform (format "translate(-%d)" width))
-      (setq x (edie-ml-inner-width (edie-ml--parent node))))
-     (t
-      (setq transform "none")
-      (setq x (edie-ml-x node))))
     (edie-ml--make-svg-node
      (map-merge
       'alist
       `((width . ,width)
         (height . ,(edie-ml-height node))
-        (x . ,x)
+        (x . ,(edie-ml-x node))
         (y . ,(edie-ml-y node))
-        (transform . ,transform)))
+        (transform . ,(edie-ml-transform node))))
      (edie-ml--svg-list (edie-ml--children node)))))
 
 ;; icon
@@ -249,17 +257,11 @@
       (xmlns:edie . "http://github.com/dleal-mojotech/edie")))
    children))
 
-(defun edie-ml--svg-list (nodes )
+(defun edie-ml--svg-list (nodes)
   (let (lst)
     (dolist (n nodes (nreverse lst))
       (push (edie-ml-svg n) lst))))
 
-(defun edie-ml--copy-if-unset (to from &rest attributes)
-  (dolist (attr attributes)
-    (unless (dom-attr to attr)
-      (cl-assert (dom-attr from attr))
-      (dom-set-attribute to attr (dom-attr from attr)))))
-
 (defun edie-ml--make-node (tag attributes children)
   (apply #'dom-node tag attributes children))
 
