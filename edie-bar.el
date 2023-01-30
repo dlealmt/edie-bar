@@ -117,9 +117,7 @@
 
 (cl-defun edie-bar-svg-prompt ((str &rest args))
   (with-selected-frame (edie-bar-frame)
-    (append
-     (list (edie-widget-propertize str (funcall edie-bar-prompt-spec str)))
-     args)))
+    (nconc (list (edie-widget-propertize str (funcall edie-bar-prompt-spec str))) args)))
 
 (cl-defmethod edie-widget-render (((_ attributes &rest children) (head bar)) _)
   ""
