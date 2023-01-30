@@ -45,6 +45,12 @@
   nil
   :type 'sexp)
 
+(defcustom edie-bar-message-spec (lambda (s) `(text nil ,s))
+  nil)
+
+(defcustom edie-bar-prompt-spec (lambda (s) `(text nil ,s))
+  nil)
+
 (defcustom edie-bar-default-frame-alist
   '((border-width . 0)
     (dedicated . t)
@@ -103,7 +109,7 @@
 (defun edie-bar-set-message (message)
   ""
   (with-selected-frame (edie-bar-frame)
-    (edie-widget-propertize message `(text nil ,message))))
+    (edie-widget-propertize message (funcall edie-bar-message-spec message))))
 
 (defun edie-bar-command-error (data _ _)
   ""
@@ -112,7 +118,7 @@
 (cl-defun edie-bar-svg-prompt ((str &rest args))
   (with-selected-frame (edie-bar-frame)
     (append
-     (list (edie-widget-propertize str `(text nil ,str)))
+     (list (edie-widget-propertize str (funcall edie-bar-prompt-spec str)))
      args)))
 
 (cl-defmethod edie-widget-render (((_ attributes &rest children) (head bar)) _)

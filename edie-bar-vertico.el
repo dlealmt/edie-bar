@@ -40,6 +40,10 @@
   ""
   :type 'keymap)
 
+(defcustom edie-bar-vertico-spec (lambda (s) `(text ((pad-x . 8)) ,s))
+  nil
+  :type 'function)
+
 (defun edie-bar-vertico--display-candidates (candidates)
   ""
   (with-selected-frame (edie-bar-frame)
@@ -54,7 +58,7 @@
                             `(box nil
                               ,@(let ((elts nil))
                                   (dolist (c candidates (nreverse elts))
-                                    (push `(text nil ,c) elts))))))))))
+                                    (push (funcall edie-bar-vertico-spec c) elts))))))))))
 
 (defun edie-bar-vertico--arrange-candidates ()
   ""
