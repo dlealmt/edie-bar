@@ -67,16 +67,20 @@
            (width (edie-bar-vertico--candidates-width))
            (unit (frame-char-width))
            (candidates nil)
+           (index 0)
            candidate)
       (while (and (setq candidate (pop collection)) (> width 0))
         (when (text-property-any 0 (length candidate) 'invisible t candidate)
           (setq candidate (substring candidate 0 (1- (length candidate)))))
-        (setq candidate (string-trim candidate))
-        (setq width (- width (string-width candidate)))
-        (push candidate candidates))
-      (prog1 (setq candidates (nreverse candidates))
-        (when-let ((c (car candidates)))
-          (add-face-text-property 0 (length c) 'vertico-current 'append c))))))
+        (push
+         (string-trim
+          (vertico--format-candidate
+           (thread-last (list candidate) (funcall vertico--highlight) (car))
+           "" "" index vertico--index))
+         candidates)
+        (setq index (1+ index))
+        (setq width (- width (string-width candidate))))
+      (nreverse candidates))))
 
 (defun edie-bar-vertico-format-count (count)
   ""
