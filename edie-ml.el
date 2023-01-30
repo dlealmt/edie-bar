@@ -186,7 +186,7 @@
 
 ;; text
 (cl-defmethod edie-ml-width ((text (head text)))
-  (* (frame-char-width) (length (dom-text text))))
+  (+ (* (or (dom-attr text 'pad-x) 0) 2) (* (frame-char-width) (length (dom-text text)))))
 
 (cl-defmethod edie-ml-height ((text (head text)))
   (edie-ml-height (edie-ml--parent text)))
@@ -203,6 +203,7 @@
   (let* ((string (car (edie-ml--children node)))
          (cwidth (frame-char-width))
          (from 0)
+         (pad-x (or (dom-attr node 'pad-x) 0))
          (svg (edie-ml--make-svg-node `((width . ,(edie-ml-width node))
                                         (height . ,(edie-ml-height node))
                                         (x . ,(edie-ml-x node)))
@@ -215,7 +216,7 @@
              (family (edie-ml--face-attribute face :family))
              (substr (substring-no-properties string from to))
              (svg-substr (edie-ml--make-svg-node
-                          `((x . ,(* from cwidth))
+                          `((x . ,(+ (* from cwidth) pad-x))
                             (width . ,(* cwidth (length substr)))
                             (height . ,(edie-ml-height node)))
                           (list
@@ -226,6 +227,16 @@
                                      (xml-escape-string substr))))))
         (dom-append-child svg svg-substr)
         (setq from to)))
+    (cl-flet ((pad-rect (children width)
+                (let ((fill (thread-first
+                              children
+                              (car)
+                              (dom-children)
+                              (car)
+                              (dom-attr 'fill))))
+                  (dom-node 'rect `((width . ,width) (height . "100%") (fill . ,fill))))))
+      (dom-add-child-before svg (pad-rect (dom-children svg) (* pad-x 2)))
+      (dom-add-child-before svg (pad-rect (reverse (dom-children svg)) "100%")))
     svg))
 
 (defun edie-ml--face-attribute (faces attribute)
