@@ -75,7 +75,9 @@
         (push
          (string-trim
           (vertico--format-candidate
-           (thread-last (list candidate) (funcall vertico--highlight) (car))
+           (thread-last
+             (list candidate) (funcall vertico--highlight) (car)
+             (replace-regexp-in-string "[[:space:]]+" " "))
            "" "" index vertico--index))
          candidates)
         (setq index (1+ index))
