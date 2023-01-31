@@ -86,10 +86,10 @@
           (push opt minibuffer-frame-alist))
         (add-to-list 'set-message-functions #'edie-bar-set-message t)
         (setq command-error-function #'edie-bar-command-error)
-        (add-function :filter-args 'read-string #'edie-bar-svg-prompt))
+        (advice-add #'read-string :filter-args #'edie-bar-svg-prompt))
     (setq set-message-functions (delq 'edie-bar-set-message set-message-functions))
     (setq command-error-function #'command-error-default-function)
-    (remove-function completing-read-function #'edie-bar-svg-prompt)))
+    (advice-remove #'read-string #'edie-bar-svg-prompt)))
 
 (defsubst edie-bar-frame ()
   default-minibuffer-frame)
