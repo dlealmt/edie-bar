@@ -211,8 +211,8 @@
     (while from
       (let* ((to (next-single-property-change from 'face string))
              (face (plist-get (text-properties-at from string) 'face))
-             (fg (edie-ml--face-attribute face :foreground))
-             (bg (edie-ml--face-attribute face :background))
+             (fg (edie-ml--color-hex (edie-ml--face-attribute face :foreground)))
+             (bg (edie-ml--color-hex (edie-ml--face-attribute face :background)))
              (family (edie-ml--face-attribute face :family))
              (substr (substring-no-properties string from to))
              (svg-substr (edie-ml--make-svg-node
@@ -284,6 +284,11 @@
 (defun edie-ml-inner-width (node)
   (let-alist (dom-attributes node)
     (- .width (* (or .pad-x 0) 2))))
+
+(defun edie-ml--color-hex (name)
+  (if (string-prefix-p "#" name)
+      name
+    (apply #'color-rgb-to-hex (nconc (color-name-to-rgb name) (list 2)))) )
 
 (provide 'edie-ml)
 ;;; edie-ml.el ends here
