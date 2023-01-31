@@ -67,7 +67,7 @@
            (width (edie-bar-vertico--candidates-width))
            (unit (frame-char-width))
            (candidates nil)
-           (index 0)
+           (index (max 0 vertico--index))
            candidate)
       (while (and (setq candidate (pop collection)) (> width 0))
         (when (text-property-any 0 (length candidate) 'invisible t candidate)
