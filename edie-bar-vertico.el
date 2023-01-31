@@ -29,7 +29,6 @@
 
 ;;; Code:
 
-(require 'edie-ml)
 (require 'vertico)
 
 (defcustom edie-bar-vertico-map

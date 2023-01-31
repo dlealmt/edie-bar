@@ -32,7 +32,6 @@
   (require 'pcase)
   (require 'subr-x))
 
-(require 'edie-ml)
 (require 'edie-widget)
 (require 'map)
 (require 'svg)

@@ -28,13 +28,33 @@
 
 ;;; Code:
 
+(require 'dom)
+(require 'map)
+(require 'svg)
+(require 'xml)
+
 (eval-when-compile
   (require 'cl-lib)
-  (require 'dom))
+  (require 'dom)
+  (require 'map)
+  (require 'pcase)
+  (require 'subr-x))
 
-(require 'dom)
-(require 'edie-ml)
-(require 'svg)
+(defcustom edie-widget-icon-padding-top 0
+  nil
+  :type 'natnum)
+
+(defcustom edie-widget-icon-size 24
+  nil
+  :type 'natnum)
+
+(defcustom edie-widget-text-padding-top 0
+  nil
+  :type 'natnum)
+
+(defvar edie-widget--dom nil)
+
+(defvar edie-widget-icon-directory "~/.cache/material-design/svg")
 
 (defun edie-widget-render-to (frame spec)
   ""
@@ -44,23 +64,26 @@
         (delete-region (point-min) (point-max))
         (let* ((update (lambda () (edie-widget-render-to frame spec)))
                (state (edie-widget--render-tree spec update))
-               (svg (edie-ml-render-svg state)))
+               (svg (edie-widget-render-svg state)))
           (set-frame-parameter frame 'edie-bar:state state)
           (set-frame-parameter frame 'edie-bar:svg svg)
-          (edie-ml-insert-image svg)
+          (edie-widget-insert-image svg)
           svg)))))
 
 (defun edie-widget-propertize (string spec)
+  (edie-widget-put-image spec 0 (length string) string))
+
+(defun edie-widget-put-image (spec from to &optional where)
   (let* ((s (edie-widget--render-tree spec nil))
-         (svg (edie-ml-render-svg s)))
-    (put-text-property 0 (length string) 'display (edie-ml-create-image svg) string)
-    (put-text-property 0 (length string) 'edie:svg svg string)
-    string))
+         (svg (edie-widget-render-svg s)))
+    (put-text-property from to 'display (edie-widget-create-image svg) where)
+    (put-text-property from to 'edie:svg svg where)
+    where))
 
 (cl-defgeneric edie-widget-render (widget _)
   ""
   widget)
-
+
 (defun edie-widget--render-tree (spec update)
   ""
   (pcase spec
@@ -73,5 +96,242 @@
          ,@(dolist (c children (nreverse nchildren))
              (push (edie-widget--render-tree c update) nchildren)))))))
 
+(defun edie-widget-render-svg (spec)
+  ""
+  (let ((edie-widget--dom `(frame ((frame . ,(selected-frame))) ,(copy-tree spec))))
+    (edie-widget-svg edie-widget--dom)))
+
+(defun edie-widget-create-image (svg)
+  ""
+  (create-image (edie-widget--stringify svg) 'svg t :scale 1))
+
+(defun edie-widget-insert-image (svg)
+  (let* ((marker (point-marker))
+         (image (edie-widget-create-image svg)))
+    (insert-image image)
+    (dom-set-attribute svg 'image marker)))
+
+(cl-defgeneric edie-widget-svg (node))
+
+(cl-defgeneric edie-widget-width (node))
+
+(cl-defgeneric edie-widget-height (node))
+
+(cl-defgeneric edie-widget-x (node))
+
+(cl-defgeneric edie-widget-y (node))
+
+(cl-defgeneric edie-widget-child-x (parent child))
+
+(cl-defgeneric edie-widget-child-y (parent child ))
+
+;; frame
+(cl-defmethod edie-widget-width ((frame (head frame)))
+  (frame-pixel-width (dom-attr frame 'frame)))
+
+(cl-defmethod edie-widget-height ((frame (head frame)))
+  (frame-pixel-height (dom-attr frame 'frame)))
+
+(cl-defmethod edie-widget-svg ((frame (head frame)))
+  (edie-widget-svg (car (edie-widget--children frame))))
+
+(cl-defmethod edie-widget-child-x ((frame (head frame)) child)
+  0)
+
+;; box
+(cl-defmethod edie-widget-width ((box (head box)))
+  (if-let ((w (dom-attr box 'width)))
+      w
+    (let ((total 0)
+          (spacing (or (dom-attr box 'spacing) 0))
+          (pad-x (or (dom-attr box 'pad-x) 0))
+          (pad-left (or (dom-attr box 'pad-left) 0)))
+      (dolist (c (edie-widget--children box))
+        (when-let ((w (edie-widget-width c)))
+          (setq total (+ total w))))
+      (+ total (* (1- (length (dom-children box))) spacing) (* pad-x 2) pad-left))))
+
+(cl-defmethod edie-widget-height ((box (head box)))
+  (edie-widget-height (edie-widget--parent box)))
+
+(cl-defmethod edie-widget-x ((box (head box)))
+  (edie-widget-child-x (edie-widget--parent box) box))
+
+(cl-defmethod edie-widget-y ((_ (head box)))
+  0)
+
+(cl-defmethod edie-widget-child-x ((box (head box)) child)
+  (+ (or (dom-attr box 'pad-x) 0)
+     (or (dom-attr box 'pad-left) 0)
+     (cond
+      ((eq (dom-attr child 'align) 'right)
+       (edie-widget-inner-width box))
+      (t
+       (pcase-let* ((x 0)
+                    (spacing (or (dom-attr box 'spacing) 0))
+                    ((seq head &rest rest) (edie-widget--children box)))
+         (while (and head (not (eq head child)))
+           (setq x (+ x (edie-widget-width head) spacing))
+           (setq head (car rest)
+                 rest (cdr rest)))
+         x)))))
+
+(cl-defmethod edie-widget-transform (node)
+  (cond
+   ((eq (dom-attr node 'align) 'right)
+    (format "translate(-%d)" (edie-widget-width node)))
+   (t
+    "none")))
+
+(cl-defmethod edie-widget-svg ((node (head box)))
+  ""
+  (let ((width (edie-widget-width node))
+        x transform)
+    (edie-widget--make-svg-node
+     (map-merge
+      'alist
+      `((width . ,width)
+        (height . ,(edie-widget-height node))
+        (x . ,(edie-widget-x node))
+        (y . ,(edie-widget-y node))
+        (transform . ,(edie-widget-transform node))))
+     (edie-widget--svg-list (edie-widget--children node)))))
+
+;; icon
+(cl-defmethod edie-widget-width ((node (head icon)))
+  edie-widget-icon-size)
+
+(cl-defmethod edie-widget-height ((node (head icon)))
+  edie-widget-icon-size)
+
+(cl-defmethod edie-widget-x ((icon (head icon)))
+  (edie-widget-child-x (edie-widget--parent icon) icon))
+
+(cl-defmethod edie-widget-y ((icon (head icon)))
+  (+ (/ (- (edie-widget-height (edie-widget--parent icon)) (edie-widget-height icon)) 2)
+     edie-widget-icon-padding-top))
+
+(cl-defmethod edie-widget-svg ((node (head icon)))
+  ""
+  (let ((svg (thread-last
+               (file-name-concat edie-widget-icon-directory (dom-attr node 'name))
+               (format "%s.svg")
+               (xml-parse-file)
+               (car)))
+        (width (edie-widget-width node))
+        (height (edie-widget-height node)))
+    (dom-set-attribute svg 'width (edie-widget-width node))
+    (dom-set-attribute svg 'height (edie-widget-height node))
+    (dom-set-attribute svg 'x (edie-widget-x node))
+    (dom-set-attribute svg 'y (edie-widget-y node))
+    (dom-set-attribute svg 'viewBox (format "0 0 %d %d" width height))
+    svg))
+
+;; text
+(cl-defmethod edie-widget-width ((text (head text)))
+  (+ (* (or (dom-attr text 'pad-x) 0) 2) (* (frame-char-width) (length (dom-text text)))))
+
+(cl-defmethod edie-widget-height ((text (head text)))
+  (edie-widget-height (edie-widget--parent text)))
+
+(cl-defmethod edie-widget-x ((text (head text)))
+  (edie-widget-child-x (edie-widget--parent text) text))
+
+(cl-defmethod edie-widget-y ((text (head text)))
+  (let* ((pheight (edie-widget-height (edie-widget--parent text))))
+    (+ edie-widget-text-padding-top (/ pheight 2))))
+
+(cl-defmethod edie-widget-svg ((node (head text)))
+  ""
+  (let* ((string (car (edie-widget--children node)))
+         (cwidth (frame-char-width))
+         (from 0)
+         (pad-x (or (dom-attr node 'pad-x) 0))
+         (svg (edie-widget--make-svg-node `((width . ,(edie-widget-width node))
+                                        (height . ,(edie-widget-height node))
+                                        (x . ,(edie-widget-x node)))
+                                      nil)))
+    (while from
+      (let* ((to (next-single-property-change from 'face string))
+             (face (plist-get (text-properties-at from string) 'face))
+             (fg (edie-widget--color-hex (edie-widget--face-attribute face :foreground)))
+             (bg (edie-widget--color-hex (edie-widget--face-attribute face :background)))
+             (family (edie-widget--face-attribute face :family))
+             (substr (substring-no-properties string from to))
+             (svg-substr (edie-widget--make-svg-node
+                          `((x . ,(+ (* from cwidth) pad-x))
+                            (width . ,(* cwidth (length substr)))
+                            (height . ,(edie-widget-height node)))
+                          (list
+                           (dom-node 'rect `((width . "100%") (height . "100%") (fill . ,bg)))
+                           (dom-node 'text `((fill . ,fg)
+                                             (y . ,(edie-widget-y node))
+                                             (font-family . ,family))
+                                     (xml-escape-string substr))))))
+        (dom-append-child svg svg-substr)
+        (setq from to)))
+    (cl-flet ((pad-rect (children width)
+                (let ((fill (thread-first
+                              children
+                              (car)
+                              (dom-children)
+                              (car)
+                              (dom-attr 'fill))))
+                  (dom-node 'rect `((width . ,width) (height . "100%") (fill . ,fill))))))
+      (dom-add-child-before svg (pad-rect (dom-children svg) (* pad-x 2)))
+      (dom-add-child-before svg (pad-rect (reverse (dom-children svg)) "100%")))
+    svg))
+
+(defun edie-widget--face-attribute (faces attribute)
+  (let ((faces (append (ensure-list faces) '(default)))
+        value)
+    (while (not value)
+      (setq value (face-attribute-specified-or (face-attribute (pop faces) attribute) nil)))
+    value))
+
+(cl-defun edie-widget--stringify (spec)
+  ""
+  (pcase spec
+    ((pred stringp) spec)
+    ((seq tag attrs &rest children)
+     (format "<%s%s>%s</%s>"
+             tag
+             (string-join (map-apply (lambda (k v) (format " %s=\"%s\"" k v)) attrs))
+             (string-join (mapcar #'edie-widget--stringify children))
+             tag))
+    (_ (error "Don't know how to convert `%S' to string" spec))))
+
+(defun edie-widget--make-svg-node (attributes children)
+  (edie-widget--make-node
+   'svg
+   (map-merge
+    'alist
+    attributes
+    '((xmlns . "http://www.w3.org/2000/svg")
+      (xmlns:edie . "http://github.com/dleal-mojotech/edie")))
+   children))
+
+(defun edie-widget--svg-list (nodes)
+  (let (lst)
+    (dolist (n nodes (nreverse lst))
+      (push (edie-widget-svg n) lst))))
+
+(defun edie-widget--make-node (tag attributes children)
+  (apply #'dom-node tag attributes children))
+
+(defun edie-widget--parent (node)
+  (dom-parent edie-widget--dom node))
+
+(defalias 'edie-widget--children #'dom-children)
+
+(defun edie-widget-inner-width (node)
+  (let-alist (dom-attributes node)
+    (- .width (* (or .pad-x 0) 2))))
+
+(defun edie-widget--color-hex (name)
+  (if (string-prefix-p "#" name)
+      name
+    (apply #'color-rgb-to-hex (nconc (color-name-to-rgb name) (list 2)))))
+
 (provide 'edie-widget)
 ;;; edie-widget.el ends here
