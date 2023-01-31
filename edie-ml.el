@@ -103,11 +103,12 @@
       w
     (let ((total 0)
           (spacing (or (dom-attr box 'spacing) 0))
-          (pad-x (or (dom-attr box 'pad-x) 0)))
+          (pad-x (or (dom-attr box 'pad-x) 0))
+          (pad-left (or (dom-attr box 'pad-left) 0)))
       (dolist (c (edie-ml--children box))
         (when-let ((w (edie-ml-width c)))
           (setq total (+ total w))))
-      (+ total (* (1- (length (dom-children box))) spacing) (* pad-x 2)))))
+      (+ total (* (1- (length (dom-children box))) spacing) (* pad-x 2) pad-left))))
 
 (cl-defmethod edie-ml-height ((box (head box)))
   (edie-ml-height (edie-ml--parent box)))
@@ -120,6 +121,7 @@
 
 (cl-defmethod edie-ml-child-x ((box (head box)) child)
   (+ (or (dom-attr box 'pad-x) 0)
+     (or (dom-attr box 'pad-left) 0)
      (cond
       ((eq (dom-attr child 'align) 'right)
        (edie-ml-inner-width box))
