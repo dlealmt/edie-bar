@@ -175,11 +175,13 @@
      (edie-widget--svg-list (edie-widget--children node)))))
 
 ;; icon
+(defconst edie-widget--original-icon-size 24)
+
 (cl-defmethod edie-widget-width ((node (head icon)))
-  edie-widget-icon-size)
+  (or (dom-attr node 'size) edie-widget-icon-size))
 
 (cl-defmethod edie-widget-height ((node (head icon)))
-  edie-widget-icon-size)
+  (or (dom-attr node 'size) edie-widget-icon-size))
 
 (cl-defmethod edie-widget-x ((icon (head icon)))
   (edie-widget-child-x (edie-widget--parent icon) icon))
@@ -191,17 +193,21 @@
 (cl-defmethod edie-widget-svg ((node (head icon)))
   ""
   (let ((svg (thread-last
-               (file-name-concat edie-widget-icon-directory (dom-attr node 'name))
-               (format "%s.svg")
+               (format "%s.svg" (dom-attr node 'name))
+               (file-name-concat edie-widget-icon-directory)
                (xml-parse-file)
-               (car)))
-        (width (edie-widget-width node))
-        (height (edie-widget-height node)))
+               (car))))
     (dom-set-attribute svg 'width (edie-widget-width node))
     (dom-set-attribute svg 'height (edie-widget-height node))
     (dom-set-attribute svg 'x (edie-widget-x node))
     (dom-set-attribute svg 'y (edie-widget-y node))
-    (dom-set-attribute svg 'viewBox (format "0 0 %d %d" width height))
+    (when-let ((fill (dom-attr node 'color))
+               (paths (dom-by-tag svg 'path)))
+      (dolist (p paths)
+        (dom-set-attribute p 'fill fill)))
+    (dom-set-attribute
+     svg 'viewBox
+     (format "0 0 %d %d" edie-widget--original-icon-size edie-widget--original-icon-size))
     svg))
 
 ;; text
@@ -294,7 +300,7 @@
 
 (defun edie-widget--insert-image (svg)
   (let* ((marker (point-marker))
-         (image (edie-widget-create--image svg)))
+         (image (edie-widget--create-image svg)))
     (insert-image image)
     (dom-set-attribute svg 'image marker)))
 

@@ -1,4 +1,4 @@
-;;; edie-bar.el --- A desktop bar -*- lexical-binding: t -*-
+;;; edie-bar-desktops.el --- Desktop widget for Edie bar -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2022-2023 David Leal
 
@@ -28,30 +28,40 @@
 
 ;;; Code:
 
-(defconst edie-bar-desktops-color-active "#fe8019")
-(defconst edie-bar-desktops-color-used "#ffae6c")
+(defcustom edie-bar-desktops-icon-color-active "#fe8019"
+  "The color of an icon symbolizing the current desktop."
+  :type 'color)
+
+(defcustom edie-bar-desktops-icon-color-used "#ffae6c"
+  "The color of an icon symbolizing a desktop containing windows."
+  :type 'color)
+
+(defcustom edie-bar-desktops-icon 'circle
+  "Name of the icon used to symbolize a desktop."
+  :type 'symbol)
 
 (defvar edie-bar-desktops--svg nil)
 
-(defun edie-bar-desktops ()
-  (let ((used (thread-last
-                (ewmh-window-list)
-                (seq-map (pcase-lambda ((map :desktop)) desktop))
-                (seq-uniq)))
-        (curdsk (ewmh-desktop-current)))
-    (mapconcat (lambda (i)
-                 (cond
-                  ((= i (map-elt curdsk :id))
-                   (embar-widget--icon embar-widget-desktop-list-icon
-                                       'embar-widget-desktop-list-active))
-                  ((seq-contains-p used i)
-                   (embar-widget--icon embar-widget-desktop-list-icon
-                                      'embar-widget-desktop-list-used))
-                  (t
-                   (embar-widget--icon embar-widget-desktop-list-icon
-                                      'embar-widget-desktop-list-normal))))
-               (seq-map (pcase-lambda ((map :id)) id) (ewmh-desktop-list))
-               embar-widget-desktop-list-separator)))
+(cl-defmethod edie-widget-render ((widget (head desktops)) update)
+  ""
+  (add-hook 'edie-wm-desktop-change-hook update)
+  (let ((desktop-index (edie-wm-desktop-index (edie-wm-current-desktop)))
+        used-desktops)
+    (dolist (w (edie-wm-window-list))
+      (setq used-desktops (plist-put used-desktops (edie-wm-window-property w :desktop) t)))
+    `(box ((spacing . ,(or (dom-attr widget 'spacing) 8)))
+       ,@(let ((index 0)
+               icons)
+           (dolist (d (edie-wm-desktop-list) (nreverse icons))
+             (push `(icon ((name . ,(dom-attr widget 'icon))
+                           (size . ,(dom-attr widget 'icon-size))
+                           (color . ,(cond
+                                      ((= desktop-index index)
+                                       edie-bar-desktops-color-active)
+                                      ((plist-get used-desktops index)
+                                       edie-bar-desktops-color-used)))))
+                   icons)
+             (setq index (1+ index)))))))
 
 (provide 'edie-bar-desktops)
 ;;; edie-bar-desktops.el ends here
