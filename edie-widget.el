@@ -143,6 +143,8 @@
      (cond
       ((eq (dom-attr child 'align) 'right)
        (edie-widget-inner-width box))
+      ((eq (dom-attr child 'align) 'center)
+       (/ (edie-widget-inner-width box) 2))
       (t
        (pcase-let* ((x 0)
                     (spacing (or (dom-attr box 'spacing) 0))
@@ -157,6 +159,8 @@
   (cond
    ((eq (dom-attr node 'align) 'right)
     (format "translate(-%d)" (edie-widget-width node)))
+   ((eq (dom-attr node 'align) 'center)
+    (format "translate(-%d)" (/ (edie-widget-width node) 2)))
    (t
     "none")))
 
