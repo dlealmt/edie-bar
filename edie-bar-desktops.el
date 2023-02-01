@@ -44,11 +44,13 @@
 
 (cl-defmethod edie-widget-render ((widget (head desktops)) update)
   ""
-  (add-hook 'edie-wm-desktop-change-hook update)
+  (add-hook 'edie-wm-desktop-focus-change-hook update)
+
   (let ((desktop-index (edie-wm-desktop-index (edie-wm-current-desktop)))
         used-desktops)
     (dolist (w (edie-wm-window-list))
       (setq used-desktops (plist-put used-desktops (edie-wm-window-property w :desktop) t)))
+
     `(box ((spacing . ,(or (dom-attr widget 'spacing) 8)))
        ,@(let ((index 0)
                icons)
