@@ -57,9 +57,9 @@
                            (size . ,(dom-attr widget 'icon-size))
                            (color . ,(cond
                                       ((= desktop-index index)
-                                       edie-bar-desktops-color-active)
+                                       edie-bar-desktops-icon-color-active)
                                       ((plist-get used-desktops index)
-                                       edie-bar-desktops-color-used)))))
+                                       edie-bar-desktops-icon-color-used)))))
                    icons)
              (setq index (1+ index)))))))
 
