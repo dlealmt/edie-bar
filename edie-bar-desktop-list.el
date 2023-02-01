@@ -1,4 +1,4 @@
-;;; edie-bar-desktops.el --- Desktop widget for Edie bar -*- lexical-binding: t -*-
+;;; edie-bar-desktop-list.el --- Desktop list widget for Edie bar -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2022-2023 David Leal
 
@@ -28,21 +28,21 @@
 
 ;;; Code:
 
-(defcustom edie-bar-desktops-icon-color-active "#fe8019"
+(defcustom edie-bar-desktop-list-icon-color-active "#fe8019"
   "The color of an icon symbolizing the current desktop."
   :type 'color)
 
-(defcustom edie-bar-desktops-icon-color-used "#ffae6c"
+(defcustom edie-bar-desktop-list-icon-color-used "#ffae6c"
   "The color of an icon symbolizing a desktop containing windows."
   :type 'color)
 
-(defcustom edie-bar-desktops-icon 'circle
+(defcustom edie-bar-desktop-list-icon 'circle
   "Name of the icon used to symbolize a desktop."
   :type 'symbol)
 
-(defvar edie-bar-desktops--svg nil)
+(defvar edie-bar-desktop-list--svg nil)
 
-(cl-defmethod edie-widget-render ((widget (head desktops)) update)
+(cl-defmethod edie-widget-render ((widget (head desktop-list)) update)
   ""
   (add-hook 'edie-wm-desktop-focus-change-hook update)
 
@@ -59,11 +59,11 @@
                            (size . ,(dom-attr widget 'icon-size))
                            (color . ,(cond
                                       ((= desktop-index index)
-                                       edie-bar-desktops-icon-color-active)
+                                       edie-bar-desktop-list-icon-color-active)
                                       ((plist-get used-desktops index)
-                                       edie-bar-desktops-icon-color-used)))))
+                                       edie-bar-desktop-list-icon-color-used)))))
                    icons)
              (setq index (1+ index)))))))
 
-(provide 'edie-bar-desktops)
-;;; edie-bar-desktops.el ends here
+(provide 'edie-bar-desktop-list)
+;;; edie-bar-desktop-list.el ends here
