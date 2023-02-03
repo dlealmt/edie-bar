@@ -28,11 +28,11 @@
 
 ;;; Code:
 
-(defcustom edie-bar-desktop-list-icon-color-active "#fe8019"
+(defcustom edie-bar-desktop-list-icon-color-active "#f97316"
   "The color of an icon symbolizing the current desktop."
   :type 'color)
 
-(defcustom edie-bar-desktop-list-icon-color-used "#ffae6c"
+(defcustom edie-bar-desktop-list-icon-color-used "#fdba74"
   "The color of an icon symbolizing a desktop containing windows."
   :type 'color)
 

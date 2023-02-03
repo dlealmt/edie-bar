@@ -6,7 +6,7 @@
 ;; Maintainer: David Leal <dleal@mojotech.com>
 ;; Created: 2022
 ;; Homepage: https://github.com/dleal-mojotech/edie
-;; Package-Requires: ((emacs "28.1"))
+;; Package-Requires: ((emacs "29.1"))
 
 ;; This file is part of Edie.
 
@@ -25,10 +25,26 @@
 
 ;;; Commentary:
 
+;; This is an SVG-based extension for Vertico, meant to emulate the look
+;; of dmenu.  Being SVG-based should (I hope) make it easier to control
+;; the position of the elements, as well as achieve other effects that I
+;; don't think are possible without the use of SVG.
+
+;; I plan to implement a vertical version eventually, and I will likely
+;; remove the dependency on Vertico in the near future.
+
+;; Beware: this is still very incomplete.  Use only if you're willing to
+;; put up with all the bugs, inconsistencies, etc.
+
+;; How to use:
+
+;; (require 'edie-bar-vertico)
 ;;
+;; (add-hook 'vertico-mode-hook 'edie-bar-vertico-mode)
 
 ;;; Code:
 
+(require 'edie-widget)
 (require 'vertico)
 
 (defcustom edie-bar-vertico-map
@@ -36,7 +52,7 @@
     (define-key map [remap left-char] #'vertico-previous)
     (define-key map [remap right-char] #'vertico-next)
     map)
-  ""
+  "Additional bindings to help navigate the horizontal list."
   :type 'keymap)
 
 (defcustom edie-bar-vertico-spec (lambda (s) `(text ((pad-x . 8)) ,s))
@@ -44,8 +60,8 @@
   :type 'function)
 
 (defun edie-bar-vertico--display-candidates (candidates)
-  ""
-  (with-selected-frame (edie-bar-frame)
+  "Display CANDIDATES horizontally."
+  (with-selected-window (active-minibuffer-window)
     (let* ((char-height (frame-char-height))
            (height (/ (frame-pixel-height) (float char-height)))
            (candidates-string (string-join candidates)))
@@ -60,8 +76,8 @@
                                     (push (funcall edie-bar-vertico-spec c) elts))))))))))
 
 (defun edie-bar-vertico--arrange-candidates ()
-  ""
-  (with-selected-frame (edie-bar-frame)
+  "Arrange candidates."
+  (with-selected-window (active-minibuffer-window)
     (let* ((collection (nthcdr vertico--index vertico--candidates))
            (width (edie-bar-vertico--candidates-width))
            (unit (frame-char-width))
@@ -84,15 +100,16 @@
       (nreverse candidates))))
 
 (defun edie-bar-vertico-format-count (count)
-  ""
+  "Render vertico's COUNT using SVG."
   (with-selected-frame (edie-bar-frame)
     (edie-widget-propertize count `(text nil ,count))))
 
 (defun edie-bar-vertico--candidates-width ()
+  "Calculate the approximate width of candidates.  Buggy."
   (- (frame-width) (car (posn-col-row (posn-at-point (1- (point-max)))))))
 
 (define-minor-mode edie-bar-vertico-mode
-  nil
+  "A global mode that tries to mimick the look of dmenu using SVG."
   :global t
   (if edie-bar-vertico-mode
       (progn

@@ -24,7 +24,7 @@
 
 ;;; Commentary:
 
-;;
+;; Desktop bar for Edie, an Emacs-based desktop environment.
 
 ;;; Code:
 
@@ -37,18 +37,12 @@
 (require 'svg)
 
 (defgroup edie-bar nil
-  "Settings for Edie bar."
+  "Settings for Edie Bar."
   :group 'edie)
 
 (defcustom edie-bar-spec nil
-  nil
+  ""
   :type 'sexp)
-
-(defcustom edie-bar-message-spec (lambda (s) `(text nil ,s))
-  nil)
-
-(defcustom edie-bar-prompt-spec (lambda (s) `(text nil ,s))
-  nil)
 
 (defcustom edie-bar-default-frame-alist
   '((border-width . 0)
@@ -79,16 +73,14 @@
 (define-minor-mode edie-bar-mode
   nil
   :global t
-  (if edie-bar-mode
-      (progn
-        (dolist (opt edie-bar-default-frame-alist)
-          (push opt minibuffer-frame-alist))
-        (add-to-list 'set-message-functions #'edie-bar-set-message t)
-        (setq command-error-function #'edie-bar-command-error)
-        (advice-add #'read-string :filter-args #'edie-bar-svg-prompt))
-    (setq set-message-functions (delq 'edie-bar-set-message set-message-functions))
-    (setq command-error-function #'command-error-default-function)
-    (advice-remove #'read-string #'edie-bar-svg-prompt)))
+  (when edie-bar-mode
+    (with-selected-frame default-minibuffer-frame
+      (with-current-buffer (window-buffer (frame-root-window))
+        (edie-widget-render-to (selected-frame) edie-bar-spec)))))
+
+(defun edie-bar-setup-frame (&optional parameters)
+  ""
+  (make-frame (map-merge 'alist parameters edie-bar-default-frame-alist)))
 
 (defsubst edie-bar-frame ()
   default-minibuffer-frame)
@@ -104,19 +96,6 @@
                (next-height (thread-first buf-height (max min-height) (min max-height))))
     (when (/= cur-height next-height)
       (set-frame-height frame next-height nil t))))
-
-(defun edie-bar-set-message (message)
-  ""
-  (with-selected-frame (edie-bar-frame)
-    (edie-widget-propertize message (funcall edie-bar-message-spec message))))
-
-(defun edie-bar-command-error (data _ _)
-  ""
-  (message "%s" (error-message-string data)))
-
-(cl-defun edie-bar-svg-prompt ((str &rest args))
-  (with-selected-frame (edie-bar-frame)
-    (nconc (list (edie-widget-propertize str (funcall edie-bar-prompt-spec str))) args)))
 
 (cl-defmethod edie-widget-render (((_ attributes &rest children) (head bar)) _)
   ""
