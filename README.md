@@ -6,6 +6,7 @@ Edie Bar is implemented in Emacs Lisp, and therefore as malleable as Emacs itsel
 
 ## Current status
 
+https://user-images.githubusercontent.com/65901588/216710624-5e025459-87a3-472b-8b53-3d5e75ac5543.mp4
 
 ## Installation
 
