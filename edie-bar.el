@@ -78,9 +78,9 @@
       (with-current-buffer (window-buffer (frame-root-window))
         (edie-widget-render-to (selected-frame) edie-bar-spec)))))
 
-(defun edie-bar-setup-frame (&optional parameters)
+(defun edie-bar-setup-frame (display &optional parameters)
   ""
-  (make-frame (map-merge 'alist parameters edie-bar-default-frame-alist)))
+  (make-frame-on-display display (map-merge 'alist parameters edie-bar-default-frame-alist)))
 
 (defsubst edie-bar-frame ()
   default-minibuffer-frame)
