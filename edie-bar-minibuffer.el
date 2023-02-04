@@ -50,10 +50,12 @@
       (progn
         (add-to-list 'set-message-functions #'edie-bar-minibuffer-set-message t)
         (setq command-error-function #'edie-bar-minibuffer-command-error)
-        (advice-add #'read-string :filter-args #'edie-bar-minibuffer-svg-prompt))
+        (advice-add #'read-string :filter-args #'edie-bar-minibuffer-svg-prompt)
+        (advice-add #'read-from-minibuffer :filter-args #'edie-bar-minibuffer-svg-prompt))
     (setq set-message-functions (delq 'edie-bar-minibuffer-set-message set-message-functions))
     (setq command-error-function #'command-error-default-function)
-    (advice-remove #'read-string #'edie-bar-minibuffer-svg-prompt)))
+    (advice-remove #'read-string #'edie-bar-minibuffer-svg-prompt)
+    (advice-remove #'read-from-minibuffer #'edie-bar-minibuffer-svg-prompt)))
 
 (defun edie-bar-minibuffer-set-message (message)
   "Render MESSAGE.
