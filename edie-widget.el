@@ -273,7 +273,8 @@
   (let ((faces (append (ensure-list faces) '(default)))
         value)
     (while (not value)
-      (setq value (face-attribute-specified-or (face-attribute (pop faces) attribute) nil)))
+      (when-let ((face (pop faces)))
+        (setq value (face-attribute-specified-or (face-attribute face attribute) nil))))
     value))
 
 (cl-defun edie-widget--stringify (spec)
