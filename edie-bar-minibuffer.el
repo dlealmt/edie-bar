@@ -51,10 +51,14 @@
         (add-to-list 'set-message-functions #'edie-bar-minibuffer-set-message t)
         (setq command-error-function #'edie-bar-minibuffer-command-error)
         (advice-add #'read-string :filter-args #'edie-bar-minibuffer-svg-prompt)
-        (advice-add #'read-from-minibuffer :filter-args #'edie-bar-minibuffer-svg-prompt))
+        (advice-add #'read-string :around #'edie-bar-minibuffer--svg-input-advice)
+        (advice-add #'read-from-minibuffer :filter-args #'edie-bar-minibuffer-svg-prompt)
+        (advice-add #'read-from-minibuffer :around #'edie-bar-minibuffer--svg-input-advice))
     (setq set-message-functions (delq 'edie-bar-minibuffer-set-message set-message-functions))
     (setq command-error-function #'command-error-default-function)
+    (advice-remove #'read-string #'edie-bar-minibuffer--svg-input-advice)
     (advice-remove #'read-string #'edie-bar-minibuffer-svg-prompt)
+    (advice-add #'read-from-minibuffer :around #'edie-bar-minibuffer--svg-input-advice)
     (advice-remove #'read-from-minibuffer #'edie-bar-minibuffer-svg-prompt)))
 
 (defun edie-bar-minibuffer-set-message (message)
@@ -74,6 +78,24 @@ See `command-error-function.'"
   "Transform STR into an SVG image and pass it on, along with ARGS."
   (with-selected-frame default-minibuffer-frame
     (nconc (list (edie-widget-propertize str (funcall edie-bar-minibuffer-prompt-spec str))) args)))
+
+(defun edie-bar-minibuffer--svg-input-advice (&rest args)
+  "Advice for read functions.
+
+Setup minibuffer and forward ARGS."
+  (minibuffer-with-setup-hook
+      (lambda ()
+        (add-hook 'post-command-hook #'edie-bar-minibuffer--svg-input nil 'local))
+    (apply args)))
+
+(defun edie-bar-minibuffer--svg-input ()
+  "Replace input with the corresponding SVG representation."
+  (let* ((begin (minibuffer-prompt-end))
+         (count (1+ (- (buffer-size) begin)))
+         (end (+ begin count)))
+    (dotimes (i count)
+      (put-text-property (+ i begin) (+ 1 i begin) 'invisible t))
+    (edie-widget-put-image `(text nil ,(buffer-substring begin end)) begin end)))
 
 (provide 'edie-bar-minibuffer)
 ;;; edie-bar-minibuffer.el ends here
