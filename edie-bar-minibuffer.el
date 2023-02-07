@@ -94,8 +94,10 @@ Setup minibuffer and forward ARGS."
          (count (1+ (- (buffer-size) begin)))
          (end (+ begin count)))
     (dotimes (i count)
-      (put-text-property (+ i begin) (+ 1 i begin) 'invisible t))
-    (edie-widget-put-image `(text nil ,(buffer-substring begin end)) begin end)))
+      (let ((from (+ i begin))
+            (to (+ 1 i begin)))
+        (put-text-property from to 'invisible t)
+        (edie-widget-put-image `(text nil ,(buffer-substring from to)) from to)))))
 
 (provide 'edie-bar-minibuffer)
 ;;; edie-bar-minibuffer.el ends here
