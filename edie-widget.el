@@ -56,19 +56,22 @@
 
 (defvar edie-widget-icon-directory "~/.cache/material-design/svg")
 
-(defun edie-widget-render-to (frame spec)
+(defun edie-widget-render-to (frame &optional spec)
   ""
-  (with-selected-frame frame
-    (with-current-buffer (window-buffer (frame-root-window))
-      (when (not (minibuffer-prompt))
-        (delete-region (point-min) (point-max))
-        (let* ((update (lambda () (edie-widget-render-to frame spec)))
-               (state (edie-widget--render-tree spec update))
-               (svg (edie-widget--render-svg state)))
-          (set-frame-parameter frame 'edie-bar:state state)
-          (set-frame-parameter frame 'edie-bar:svg svg)
-          (edie-widget--insert-image svg)
-          svg)))))
+  (let ((spec (or spec (frame-parameter frame 'edie-bar:spec))))
+    (with-selected-frame frame
+      (with-current-buffer (window-buffer (frame-root-window))
+        (when (not (minibuffer-prompt))
+          (let* ((update (lambda () (edie-widget-render-to frame)))
+                 (state (edie-widget--render-tree spec update)))
+            (unless (equal state (frame-parameter frame 'edie-bar:state))
+              (delete-region (point-min) (point-max))
+              (let ((svg (edie-widget--render-svg state)))
+                (modify-frame-parameters frame `((edie-bar:state . ,state)
+                                                 (edie-bar:svg . ,svg)
+                                                 (edie-bar:spec . ,spec)))
+                (edie-widget--insert-image svg)
+                svg))))))))
 
 (defun edie-widget-propertize (string spec)
   (edie-widget-put-image spec 0 (length string) string))
