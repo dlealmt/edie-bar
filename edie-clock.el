@@ -48,9 +48,12 @@
 
 (defun edie-clock--icon (icon)
   ""
-  (when (eq icon 'moving-clock)
+  (cond
+   ((eq icon 'moving-clock)
     (let ((pos (% (decoded-time-hour (decode-time)) 12)))
-      (format "clock-time-%s" (aref edie-clock--numbers pos)))))
+      (format "clock-time-%s" (aref edie-clock--numbers pos))))
+   (t
+    (symbol-name icon))))
 
 (provide 'edie-clock)
 ;;; edie-clock.el ends here
