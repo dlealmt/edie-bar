@@ -1,5 +1,7 @@
 # Edie Bar
 
+## [2023-02-13] Moved back to [Edie's](https://github.com/dleal-mojotech/edie) repository.
+
 A bar and launcher for [Edie](https://github.com/dleal-mojotech/edie), an Emacs-based desktop environment currently in development. Edie Bar uses SVG to render all its contents, making it possible for you to put things exactly where you want them, and (eventually) allowing you to use effects like drop shadows, round corners, etc.
 
 Edie Bar is implemented in Emacs Lisp, and therefore as malleable as Emacs itself.
